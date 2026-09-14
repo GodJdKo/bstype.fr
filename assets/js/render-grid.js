@@ -546,7 +546,16 @@
           /* un media : la hauteur qui montre l'image en entier */
           veut = Math.max(veut, (largeurColonne * c._span) / ratio);
         } else if (c.dataset.type !== "download" && c.dataset.type !== "blank") {
-          veut = Math.max(veut, zone * (parseFloat(c.dataset.hauteur) || 1));
+          let m = parseFloat(c.dataset.hauteur) || 1;
+          /* Sur telephone (une seule colonne) les besoins changent :
+             l'editeur empile ses reglages et sa zone de texte, il lui
+             faut de la hauteur ; le jeu de caracteres, lui, tient
+             mieux en moins haut, l'apercu prenant la moitie. */
+          if (colonnes <= 1) {
+            if (c.dataset.type === "editor") m = Math.max(m, 1.7);
+            if (c.dataset.type === "characterset") m = Math.min(m, 0.85);
+          }
+          veut = Math.max(veut, zone * m);
         }
       });
       if (!veut) veut = zone * 0.72;
@@ -759,12 +768,35 @@
     });
   }
 
+  /* Filet pour les noms accentues : macOS ecrit les accents en deux
+     morceaux, git et les serveurs en un seul. Si le fichier demande
+     n'arrive pas, on retente avec l'autre ecriture avant d'abandonner. */
+  function autreEcriture(url) {
+    if (typeof "".normalize !== "function") return null;
+    const nfc = url.normalize("NFC");
+    const nfd = url.normalize("NFD");
+    if (url !== nfc) return nfc;
+    if (url !== nfd) return nfd;
+    return null;
+  }
+
+  function filetDeNom(el, src) {
+    let deja = false;
+    el.addEventListener("error", () => {
+      if (deja) return;
+      deja = true;
+      const autre = autreEcriture(src);
+      if (autre) el.src = autre;
+    });
+  }
+
   function mountMedia(host, entry, crop) {
     const kind = entry.kind || "image";
     const src = "media/" + entry.file;
 
     if (kind !== "video") {
       const img = document.createElement("img");
+      filetDeNom(img, src);
       img.src = src;
       img.alt = kind === "gif" ? "Animation" : "Image";
       img.loading = "lazy";
@@ -775,6 +807,7 @@
 
     const mode = entry.playback || "scrub";
     const video = document.createElement("video");
+    filetDeNom(video, src);
     video.src = src;
     video.muted = true;
     video.playsInline = true;
@@ -1053,8 +1086,12 @@
       })();
 
       const em = m.ascender + m.descender;
-      const wCap = box.width > 0 ? box.width * 0.62 : Infinity;
-      const size = Math.min((box.height * 0.62) / em, wCap);
+      /* Dans un module etroit (telephone), l'apercu est plus large
+         que haut : le glyphe peut alors occuper bien plus de sa
+         hauteur sans risquer de toucher les bords. */
+      const large = box.width > box.height;
+      const wCap = box.width > 0 ? box.width * (large ? 0.72 : 0.62) : Infinity;
+      const size = Math.min((box.height * (large ? 0.82 : 0.62)) / em, wCap);
       let baseline = box.height / 2 + ((m.ascender - m.descender) / 2) * size;
 
       big.style.fontSize = size + "px";

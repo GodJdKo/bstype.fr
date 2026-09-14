@@ -108,8 +108,11 @@
       const score = c[1] - Math.max(c[0], c[2]);
       if (score > bestScore) { bestScore = score; best = c; }
     });
-    /* si aucun coin n'est vert, on prend un vert de studio classique */
-    return bestScore > 20 ? best : [0, 177, 64];
+    /* Aucun coin vert : l'image n'est pas encore decodee (c'est
+       courant sur telephone, ou la premiere image arrive noire). On
+       ne retient RIEN — on redemandera a la suivante. Sans ça on
+       figeait un faux vert et la vignette gardait son fond. */
+    return bestScore > 20 ? best : null;
   }
 
   function keyOut(img) {
@@ -183,6 +186,11 @@
     wrap.style.setProperty("--tete-h", pc((boite.y1 - boite.y0 + 1) / canvas.height));
   }
 
+  /* Nombre d'images qu'on s'autorise a attendre avant de decider que
+     le fond n'est pas vert. */
+  const ESSAIS_FOND = 30;
+  let essaisFond = 0;
+
   let sized = false;
   let drawnOnce = false;
   let visible = true;       /* vignette a l'ecran ? (onglet, defilement) */
@@ -214,7 +222,14 @@
     } catch (_e) {
       return false;         /* canvas salis : jamais en local */
     }
-    if (!key) key = sampleKey(img.data, canvas.width, canvas.height);
+    if (!key) {
+      key = sampleKey(img.data, canvas.width, canvas.height);
+      essaisFond += 1;
+      /* au bout de ESSAIS_FOND images sans rien de vert, on se rabat
+         sur un vert de studio classique plutot que de ne rien faire */
+      if (!key && essaisFond >= ESSAIS_FOND) key = [0, 177, 64];
+      if (!key) return false;
+    }
     keyOut(img);
     ctx.putImageData(img, 0, 0);
     wrap.classList.add("is-ready");
@@ -456,8 +471,17 @@
     const p = video.play();
     const after = () => {
       video.pause();
-      drawLive();
-      buildStrip();
+      /* On attend d'avoir VRAIMENT releve la couleur du fond avant de
+         fabriquer la bande : si on part sur une image noire, toutes
+         les images gardees en memoire le seront sans detourage. */
+      let essais = 0;
+      const tenter = () => {
+        drawLive();
+        essais += 1;
+        if (key || essais >= ESSAIS_FOND) { buildStrip(); return; }
+        setTimeout(tenter, 70);
+      };
+      tenter();
     };
     if (p && p.then) p.then(after).catch(() => {
       try { video.currentTime = 0.01; } catch (_e) {}

@@ -151,10 +151,14 @@
   gap: var(--space-2);
   min-height: 0;
 }
+/* MODULE ETROIT (telephone) : la grille de glyphes au-dessus,
+   l'apercu en dessous — et l'apercu prend LA MOITIE du module. Le
+   grand caractere est ce qu'on vient regarder ; a 0,8 contre 1 il
+   etait ecrase par la grille. */
 @container (max-width: 340px) {
   .grid-cell__charset {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr) minmax(0, 0.8fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 

@@ -277,9 +277,14 @@ window.BSSnapshot = (function () {
   }
 
   /* ---------- la photo ---------- */
-  function take() {
-    const largeur = Math.max(1, document.documentElement.clientWidth);
-    const hauteur = Math.max(1, document.documentElement.clientHeight);
+  /* take({ largeur, hauteur }) : on peut imposer la taille de la
+     photo. C'est necessaire sur telephone, ou la hauteur de la
+     fenetre ne vaut pas la hauteur de ce qu'on voit (barre
+     d'adresse) : sans ca la photo est etiree dans sa toile. */
+  function take(mesures) {
+    const m = mesures || {};
+    const largeur = Math.max(1, Math.round(m.largeur || document.documentElement.clientWidth));
+    const hauteur = Math.max(1, Math.round(m.hauteur || document.documentElement.clientHeight));
     const dx = window.scrollX;
     const dy = window.scrollY;
 

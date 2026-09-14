@@ -227,8 +227,21 @@
      la mediane : c'est le chiffre a regarder si ca rame. */
   const mesures = [];
 
-  const largeur = () => Math.max(1, document.documentElement.clientWidth);
-  const hauteur = () => Math.max(1, document.documentElement.clientHeight);
+  /* Dimensions prises sur LA TOILE ELLE-MEME des qu'elle est posee,
+     pas sur la fenetre : sur telephone les deux different (barre
+     d'adresse), et la photo se retrouvait etiree. */
+  function boiteToile() {
+    if (hote.parentNode) {
+      const r = hote.getBoundingClientRect();
+      if (r.width > 1 && r.height > 1) return r;
+    }
+    return {
+      width: document.documentElement.clientWidth,
+      height: document.documentElement.clientHeight
+    };
+  }
+  const largeur = () => Math.max(1, boiteToile().width);
+  const hauteur = () => Math.max(1, boiteToile().height);
 
   /* Finesse reelle de la toile : ECHELLE, sauf sur un grand ecran
      ou on descend pour rester sous PIXELS_MAX. */
@@ -240,7 +253,9 @@
   function photographier() {
     if (enCours) return;
     enCours = true;
-    window.BSSnapshot.take().then((c) => {
+    /* la photo fait EXACTEMENT la taille de la toile : aucun
+       etirement, aucun decalage */
+    window.BSSnapshot.take({ largeur: largeur(), hauteur: hauteur() }).then((c) => {
       photo = c;
       enCours = false;
       if (!c) { cible = 0; eteindre(); }
@@ -624,6 +639,8 @@
   }
 
   function preparer() {
+    /* la toile est posee AVANT que p5 la mesure : sans ca elle se
+       fabrique a la taille de la fenetre, pas a la sienne */
     if (!hote.parentNode) document.body.appendChild(hote);
     if (!croquis) croquis = new p5(sketch, hote);
   }
@@ -661,6 +678,7 @@
     avancee = 0;
     poserOpacite(0);
     depuisSommeil = performance.now();
+    preparer();                 /* la toile d'abord, on mesure ensuite */
     photographier();
     allumer();
     /* Le logo arrive apres, sur sa propre toile (glitch-logo.js) :

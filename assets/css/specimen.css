@@ -261,10 +261,39 @@
   gap: var(--space-2);
   min-height: 0;
 }
+/* MODULE ETROIT (telephone) : le panneau passe SOUS forme de
+   grille, TROIS REGLAGES PAR LIGNE. Empiles les uns sous les autres
+   ils prenaient toute la hauteur du module, et il ne restait plus
+   rien pour la zone de texte — qui est pourtant ce qu'on vient
+   essayer. La rangee de boutons, elle, tient toute la largeur. */
 @container (max-width: 430px) {
   .zone__body.grid-cell__editor {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: auto minmax(0, 1fr);
+  }
+  .grid-cell__editor .editor__panel {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-content: start;
+    gap: 7px 6px;
+    overflow: visible;
+  }
+  .grid-cell__editor .editor__panel .editor__align {
+    grid-column: 1 / -1;
+  }
+  /* les lignes de points ne servent a rien dans une case de 30 % */
+  .grid-cell__editor .editor__panel .ctl .dots {
+    display: none;
+  }
+  .grid-cell__editor .editor__panel .ctl__head {
+    gap: 0;
+  }
+}
+
+/* Vraiment tres etroit : deux par ligne, sinon on ne lit plus rien. */
+@container (max-width: 260px) {
+  .grid-cell__editor .editor__panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

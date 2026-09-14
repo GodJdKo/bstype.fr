@@ -11,16 +11,4 @@
    (champ "text" de chaque ligne) et sont conservees.
    ============================================================ */
 
-window.BS_INUSE = {
-  "bs-mono": {
-    "text": "BS Mono à l'œuvre : interfaces, affichage de code, signalétique\ntechnique. Remplace ce texte par le tien — il s'affiche en tête de\nla ligne dépliée dans la section \"Fonts in use\".",
-    "link": "https://bstype.com/projets/bs-mono",
-    "items": [
-      {
-        "file": "253997_medium.mp4",
-        "kind": "video",
-        "text": ""
-      }
-    ]
-  }
-};
+window.BS_INUSE = {};

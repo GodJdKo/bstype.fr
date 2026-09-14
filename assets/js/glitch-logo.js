@@ -142,9 +142,34 @@
   let dernierDessin = 0;    /* pour tenir la cadence */
   let posee = false;
   let ouverture = false;    /* on joue l'ouverture du site ? */
+  /* Surveillance du retour en arriere. Reculer dans un film demande
+     au navigateur de redecoder : sur telephone il refuse parfois, et
+     l'image se figeait puis disparaissait d'un coup. Si le film ne
+     recule plus pendant BLOCAGE millisecondes, on abandonne le
+     retour image par image et on FOND simplement — meme duree, meme
+     effet a l'oeil, et ca ne se coince jamais. */
+  const BLOCAGE = 400;
+  let derniereAvancee = 0;  /* instant du dernier vrai recul */
+  let posSurveillee = -1;
+  let fondu = 0;            /* 0 = pas de fondu ; sinon, ce qu'il reste */
+  let fonduTotal = 0;
 
-  const largeur = () => Math.max(1, document.documentElement.clientWidth);
-  const hauteur = () => Math.max(1, document.documentElement.clientHeight);
+  /* Dimensions prises sur LA TOILE ELLE-MEME des qu'elle est posee.
+     Sur telephone, la hauteur de la fenetre ne vaut pas la hauteur
+     de ce qu'on voit (barre d'adresse) : le logo s'y retrouvait
+     legerement deforme. */
+  function boite() {
+    if (posee) {
+      const r = hote.getBoundingClientRect();
+      if (r.width > 1 && r.height > 1) return r;
+    }
+    return {
+      width: document.documentElement.clientWidth,
+      height: document.documentElement.clientHeight
+    };
+  }
+  const largeur = () => Math.max(1, boite().width);
+  const hauteur = () => Math.max(1, boite().height);
 
   /* ============================================================
      LA CARTE GRAPHIQUE
@@ -301,6 +326,9 @@
     if (boucle) { cancelAnimationFrame(boucle); boucle = 0; }
     video.pause();
     ouverture = false;
+    fondu = 0;
+    posSurveillee = -1;
+    hote.style.opacity = "";
     hote.classList.remove("is-ouverture");
     poserVoile(0);
     if (!posee) return;
@@ -335,14 +363,38 @@
          derniere image reste dessinee sur la toile. */
       if (video.currentTime >= fin()) { video.pause(); sens = 0; return; }
     } else if (sens < 0) {
+      const vitesse = ouverture ? INTRO : RETOUR;
+
+      /* --- le film s'est coince : on finit en fondu --- */
+      if (fondu > 0) {
+        fondu -= maintenant - (dernierDessin || maintenant);
+        const reste = Math.max(0, fondu / Math.max(1, fonduTotal));
+        hote.style.opacity = reste.toFixed(3);
+        poserVoile(reste);
+        if (fondu <= 0) { sens = 0; retirer(); return; }
+        boucle = requestAnimationFrame(avancer);
+        return;
+      }
+
       /* En arriere on SAUTE des images du film : a chaque dessin on
          recule de plusieurs images d'un coup. Il y a une image cle
-         toutes les quatre images dans ce fichier, donc reculer y est
-         rapide. */
-      const vitesse = ouverture ? INTRO : RETOUR;
+         toutes les dix images dans ce fichier, donc reculer y est
+         rapide — quand le navigateur veut bien. */
       const saut = Math.max(1, Math.round((CADENCE_FILM / CADENCE) * vitesse));
       const t = video.currentTime - Math.max(dt * vitesse, saut / CADENCE_FILM);
       if (t <= 0) { sens = 0; retirer(); return; }
+
+      /* le film a-t-il vraiment recule depuis la derniere image ? */
+      if (posSurveillee < 0 || video.currentTime < posSurveillee - 0.001) {
+        posSurveillee = video.currentTime;
+        derniereAvancee = maintenant;
+      } else if (maintenant - derniereAvancee > BLOCAGE) {
+        fonduTotal = Math.max(200, (video.currentTime / vitesse) * 1000);
+        fondu = fonduTotal;
+        boucle = requestAnimationFrame(avancer);
+        return;
+      }
+
       video.currentTime = t;
       poserVoile(t / Math.max(0.01, video.duration || 1));
       dessiner(true);
@@ -354,6 +406,8 @@
 
   function relancer() {
     if (!sens) return;
+    posSurveillee = -1;
+    derniereAvancee = performance.now();
     /* On annule toujours l'image en attente avant d'en demander une
        autre : quand l'onglet passe en arriere-plan, la demande
        posee ne se realise jamais, et sans cette annulation le film
@@ -366,6 +420,8 @@
 
   function jouer() {
     if (!pret) return false;
+    fondu = 0;
+    hote.style.opacity = "";
     /* Si le film etait reste sur sa derniere image — apres
        l'ouverture du site, ou apres un arret force — on repart du
        debut, sinon il se figerait aussitot. */

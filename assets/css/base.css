@@ -48,11 +48,14 @@ img {
 /* L'opacite est pilotee IMAGE PAR IMAGE par idle-glitch.js : le
    fondu d'entree dure quatre secondes, la sortie est immediate.
    Pas de transition CSS ici, elle se battrait avec le calcul. */
+/* PAS de 100vw / 100vh ici. Sur telephone, 100vh vaut la hauteur de
+   l'ecran BARRE D'ADRESSE CACHEE : la toile etait donc plus haute
+   que ce qu'on voit, et la photo de la page s'y retrouvait etiree et
+   decalee — « l'effet change l'aspect et n'est pas au meme endroit
+   que le site ». inset: 0 suffit, et colle a ce qui est affiche. */
 .bs-glitch {
   position: fixed;
   inset: 0;
-  width: 100vw;
-  height: 100vh;
   z-index: 90;
   opacity: 0;
   pointer-events: none;
@@ -211,8 +214,10 @@ html.bs-charge body {
   display: flex;
   flex-direction: column;
   flex: 1;
-  /* la colonne de texte ne passe jamais sous la photo */
-  max-width: min(62%, 1100px);
+  /* La colonne de texte et la photo se PARTAGENT la largeur : leurs
+     deux maximums additionnes ne depassent jamais 100 %, sinon la
+     photo passe devant les mots. */
+  max-width: 56%;
 }
 
 .bs-pied__titre {
@@ -250,32 +255,41 @@ html.bs-charge body {
    proportions, jamais d'ecrasement. */
 .bs-pied__photo {
   position: absolute;
-  right: clamp(-96px, -4vw, -18px);
+  /* calee sur le bord du fond clair, pas au-dela : le pied REJOINT
+     le cadre au lieu d'en sortir */
+  right: 0;
   bottom: 0;
   z-index: 1;
   /* toute la hauteur du fond clair, du bas jusqu'en haut */
   height: 100%;
   width: auto;
-  max-width: 58%;
+  max-width: 42%;
   object-fit: contain;
   object-position: bottom right;
   pointer-events: none;
 }
 
-/* format etroit : la photo passe derriere, en filigrane, et le
-   texte reprend toute la largeur */
+/* Format etroit : plus de superposition du tout. Le texte occupe
+   toute la largeur, la photo se range EN DESSOUS, calee a droite. */
 @media (max-width: 720px) {
   .bs-pied {
-    min-height: min(58vh, 520px);
+    min-height: 0;
+    padding-bottom: 0;
   }
   .bs-pied__texte {
     max-width: 100%;
   }
+  .bs-pied__fonde {
+    padding-top: clamp(18px, 6vw, 40px);
+  }
   .bs-pied__photo {
-    right: -14%;
-    height: 74%;
-    max-width: 74%;
-    opacity: 0.9;
+    position: relative;
+    right: auto;
+    bottom: auto;
+    align-self: flex-end;
+    height: clamp(150px, 38vw, 280px);
+    max-width: 70%;
+    margin-top: clamp(10px, 3vw, 24px);
   }
 }
 
@@ -767,4 +781,62 @@ html.bs-charge body {
 @media (prefers-reduced-motion: reduce) {
   .about,
   .bs-face::before { transition: opacity 0.2s ease; }
+}
+
+/* ============================================================
+   DOIGTS : LES CIBLES TROP PETITES
+   ------------------------------------------------------------
+   Mesure faite a 320 px de large : le chevron d'un module faisait
+   11 x 12 pixels, les liens de la barre du haut 20 pixels de haut,
+   la pastille de couleur 16 pixels de large. A la souris ça passe,
+   au doigt non — la recommandation d'Apple comme de Google est 44
+   points de cote.
+
+   On ne change RIEN a ce qui se voit : on pose une zone invisible
+   autour du bouton, qui recoit le toucher a sa place. Uniquement
+   sur les ecrans tactiles (pointer: coarse) — a la souris, la
+   precision est la et une zone trop large gênerait.
+   ============================================================ */
+@media (pointer: coarse) {
+  .nav__brand,
+  .nav__fonts,
+  .nav__lang-btn,
+  .zone__chev,
+  .ctl__box,
+  .cs__toggle,
+  .cs__pick,
+  .editor__rail-btn {
+    position: relative;
+  }
+
+  .nav__brand::after,
+  .nav__fonts::after,
+  .nav__lang-btn::after,
+  .zone__chev::after,
+  .ctl__box::after,
+  .cs__toggle::after,
+  .cs__pick::after,
+  .editor__rail-btn::after {
+    content: "";
+    position: absolute;
+    /* de quoi atteindre 44 points sans deplacer le dessin */
+    inset: -12px;
+    /* le chevron est colle au bord du module : on ne deborde pas
+       au-dela, sinon il attrape les clics du module voisin */
+    border-radius: 4px;
+  }
+
+  /* le chevron est tout petit : il lui faut un peu plus */
+  .zone__chev::after {
+    inset: -16px -14px;
+  }
+
+  /* Les cases du jeu de caracteres : 28 pixels mesures sur un
+     telephone, c'est trop petit pour viser un glyphe. On les
+     agrandit — il y en a moins par ligne, mais on peut les toucher.
+     Elles sont cote a cote : pas de zone invisible ici, elle
+     mordrait sur la voisine. */
+  .cs__grid {
+    --cs-cell: 40px;
+  }
 }

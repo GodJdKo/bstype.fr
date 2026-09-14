@@ -764,6 +764,11 @@ function mesurerMedia(fichier) {
   return null;
 }
 
+/* Noms de media avec accent ou espace : ils marchent, mais ils sont
+   fragiles (macOS, git et les serveurs ne les ecrivent pas pareil).
+   On les signale dans le rapport. */
+const accentues = [];
+
 const brokenManifests = [];
 
 function inUseFor(slug) {
@@ -1159,10 +1164,19 @@ function manifestFor(slug) {
     .sort()
     .map((n) => {
       const kind = KIND_BY_EXT[path.extname(n).toLowerCase()];
-      const e = { file: n, kind };
+      /* NOM DE FICHIER, PIEGE A NE PLUS REFAIRE : macOS rend les
+         accents en deux morceaux (« e » + accent) ; git, les
+         serveurs et les navigateurs, eux, comparent les octets. Un
+         « spécimen.jpg » ecrit en deux morceaux dans le manifeste
+         demandait donc un fichier qui n'existe pas pour le serveur,
+         et le module restait vide. On ecrit toujours la forme
+         RECOMPOSEE, celle que git enregistre. */
+      const nom = typeof n.normalize === "function" ? n.normalize("NFC") : n;
+      const e = { file: nom, kind };
       if (kind === "video") e.playback = modes[n] || "scrub";
       /* dimensions lues dans le fichier : elles servent a choisir la
          largeur de module qui recadre le moins */
+      if (/[^\u0020-\u007e]|\s/.test(nom)) accentues.push(dir.split("/").slice(-2).join("/") + "/" + nom);
       const taille = mesurerMedia(path.join(dir, n));
       if (taille) { e.w = taille.w; e.h = taille.h; }
       return e;
@@ -1244,6 +1258,7 @@ finalFonts.forEach((f) => {
 });
 console.log(`Pages specimen   : ${finalFonts.length} (dont ${pagesCreated} creee(s))`);
 console.log(`Media indexes    : ${media}`);
+accentues.forEach((f) => console.log(`  ! nom fragile   : ${f} (accent ou espace — prefere des lettres simples et des tirets)`));
 console.log(`Cache navigateur : ${stamped} page(s) reestampillees (plus besoin de vider le cache)`);
 console.log(`Pastilles accueil: ${finalFonts.length} fonte(s)` + (pillsAdded ? ` (${pillsAdded} ajoutee(s))` : ""));
 console.log(`Fonts in use     : ${inUseInfo.fonts} fonte(s), ${inUseInfo.items} visuel(s)`);
