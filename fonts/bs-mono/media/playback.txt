@@ -1,0 +1,5 @@
+# Mode de lecture des videos de ce dossier.
+# Une ligne par fichier :   ma-video.mp4 = scrub
+# Modes : scrub (defaut, la video suit le scroll) | loop | once | static
+
+REEL BS MONO.mp4 = loop

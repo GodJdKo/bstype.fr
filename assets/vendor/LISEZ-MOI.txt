@@ -1,0 +1,19 @@
+BIBLIOTHEQUES EXTERIEURES
+-------------------------
+
+p5.min.js — p5.js v1.11.3 (22 janvier 2025)
+  Licence LGPL-2.1. Site : https://p5js.org
+  Telecharge depuis :
+    https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.11.3/p5.min.js
+
+  Sert a l'effet de dereglement quand on ne fait rien
+  (assets/js/idle-glitch.js) : bruit de Perlin, manipulation des
+  pixels, dessin.
+
+  Le fichier est GARDE ICI, en local, et jamais charge depuis
+  internet : le site doit marcher hors ligne, sur une cle USB, et
+  dans dix ans, meme si le site de p5 a disparu.
+
+  NE PAS METTRE A JOUR sans raison. Si tu le fais : remplace le
+  fichier, garde le meme nom, et verifie que l'effet marche encore
+  sur la page d'accueil ET sur une page de fonte.

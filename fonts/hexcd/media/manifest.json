@@ -1,0 +1,15 @@
+[
+  {
+    "file": "hexcdHASH.mp4",
+    "kind": "video",
+    "playback": "loop",
+    "w": 1280,
+    "h": 720
+  },
+  {
+    "file": "spécimen hex orange.jpg",
+    "kind": "image",
+    "w": 1860,
+    "h": 2631
+  }
+]

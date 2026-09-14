@@ -1,0 +1,770 @@
+/* ============================================================
+   BASE.CSS — RESET + STYLES GLOBAUX
+   ------------------------------------------------------------
+   Reset minimal, typographie par défaut, navigation.
+   Les couleurs/tailles viennent de tokens.css.
+   ============================================================ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Le defilement s'arrete NET en haut et en bas : pas de rebond, pas
+   de page qui continue de glisser au-dela de son contenu. */
+html,
+body {
+  overscroll-behavior: none;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* Toile de l'effet d'inactivite (assets/js/idle-glitch.js) :
+   posee par-dessus TOUTE la fenetre, elle montre la page
+   photographiee puis malmenee. Elle ne prend aucun clic : le
+   moindre geste la fait disparaitre de toute facon. */
+/* L'opacite est pilotee IMAGE PAR IMAGE par idle-glitch.js : le
+   fondu d'entree dure quatre secondes, la sortie est immediate.
+   Pas de transition CSS ici, elle se battrait avec le calcul. */
+.bs-glitch {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 90;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* La toile p5 est dessinee en plus petit que l'ecran puis
+   agrandie : gros grain assume, et trois fois moins de pixels a
+   calculer. « pixelated » garde les carres nets au lieu de les
+   flouter. */
+.bs-glitch canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  image-rendering: pixelated;
+}
+
+/* ============================================================
+   LE LOGO PAR-DESSUS LE DEREGLEMENT
+   ------------------------------------------------------------
+   Sa propre toile, AU-DESSUS de celle de l'effet : le logo reste
+   net pendant que la page part en bouillie derriere lui.
+   Voir assets/js/glitch-logo.js.
+   ============================================================ */
+.bs-glitch-logo {
+  position: fixed;
+  inset: 0;
+  z-index: 91;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.bs-glitch-logo canvas {
+  display: block;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* Voile noir uni pose sur tout l'ecran pendant le dereglement. Il
+   s'installe doucement : rien au premier instant, 15 % de noir au
+   bout de quinze secondes. Son opacite est pilotee image par image
+   par idle-glitch.js (OMBRE_MONTEE, OMBRE_FORCE) — pas de transition
+   ici, elle se battrait avec le calcul. */
+.bs-glitch__ombre {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Voile noir de l'ouverture du site : plein au depart, il s'efface
+   au fil du film joue a l'envers. Son opacite est posee image par
+   image dans glitch-logo.js — pas de transition ici, elle se
+   battrait avec le calcul. */
+.bs-glitch-logo__voile {
+  position: absolute;
+  inset: 0;
+  background: var(--color-bg);
+  opacity: 0;
+}
+
+/* ============================================================
+   ECRAN DE CHARGEMENT (assets/js/boot.js)
+   ------------------------------------------------------------
+   Fond noir plein. Sur l'ACCUEIL il reste nu : le logo entier est
+   dessine par-dessus par glitch-logo.js, fige sur la derniere image
+   du film. Sur une PAGE DE FONTE, la vignette 2face tourne au
+   milieu, son fond vert detoure.
+   ============================================================ */
+.bs-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 998;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+}
+
+.bs-boot.is-done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bs-boot__c {
+  display: block;
+  width: clamp(120px, 22vmin, 240px);
+  height: auto;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+
+.bs-boot.is-ready .bs-boot__c {
+  opacity: 1;
+}
+
+@keyframes bs-boot-tour {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* La source : presente dans le document, sinon le navigateur ne la
+   decode pas — mais invisible. */
+.bs-boot__src {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 2px;
+  height: 2px;
+  opacity: 0.01;
+  pointer-events: none;
+}
+
+/* Pendant l'ouverture, le logo doit passer AU-DESSUS du fond noir
+   de l'ecran de chargement ; le reste du temps il reste a sa place,
+   juste au-dessus du dereglement. */
+.bs-glitch-logo.is-ouverture {
+  z-index: 999;
+}
+
+/* Defilement et clics bloques le temps du chargement. */
+html.bs-charge,
+html.bs-charge body {
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* ============================================================
+   PIED DE PAGE (assets/js/footer.js)
+   ------------------------------------------------------------
+   Le meme sur toutes les pages. Fond clair, BS.type en grand, la
+   ligne orange, la mention de fondation en bas — et la photo calee
+   en bas a droite, qui deborde du cadre.
+   ============================================================ */
+.bs-pied {
+  position: relative;
+  overflow: hidden;
+  background: var(--color-text);
+  color: var(--color-dark);
+  min-height: min(62vh, 620px);
+  padding: var(--space-4) var(--page-margin);
+  display: flex;
+  flex-direction: column;
+  isolation: isolate;
+}
+
+.bs-pied__texte {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  /* la colonne de texte ne passe jamais sous la photo */
+  max-width: min(62%, 1100px);
+}
+
+.bs-pied__titre {
+  font-family: var(--font-ui);
+  font-weight: normal;
+  font-size: var(--text-footer);
+  line-height: 0.9;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+.bs-pied__ligne {
+  /* le retour a la ligne est ecrit dans le texte (i18n.js) */
+  white-space: pre-line;
+  margin: clamp(10px, 1.6vw, 26px) 0 0;
+  font-family: var(--font-ui);
+  color: var(--color-orange);
+  font-size: clamp(0.78rem, 1.9vw, 1.85rem);
+  line-height: 1.25;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bs-pied__fonde {
+  margin: auto 0 0;
+  padding-top: clamp(24px, 5vw, 90px);
+  font-family: var(--font-ui);
+  font-size: clamp(0.56rem, 1.05vw, 0.95rem);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+/* La photo est calee sur le bas du cadre et debordE a droite :
+   c'est le pied qui sort du pied de page. « contain » garde ses
+   proportions, jamais d'ecrasement. */
+.bs-pied__photo {
+  position: absolute;
+  right: clamp(-96px, -4vw, -18px);
+  bottom: 0;
+  z-index: 1;
+  /* toute la hauteur du fond clair, du bas jusqu'en haut */
+  height: 100%;
+  width: auto;
+  max-width: 58%;
+  object-fit: contain;
+  object-position: bottom right;
+  pointer-events: none;
+}
+
+/* format etroit : la photo passe derriere, en filigrane, et le
+   texte reprend toute la largeur */
+@media (max-width: 720px) {
+  .bs-pied {
+    min-height: min(58vh, 520px);
+  }
+  .bs-pied__texte {
+    max-width: 100%;
+  }
+  .bs-pied__photo {
+    right: -14%;
+    height: 74%;
+    max-width: 74%;
+    opacity: 0.9;
+  }
+}
+
+/* L'attribut hidden doit gagner sur les display: flex / grid poses
+   plus bas : c'est lui qui masque les modules replies du catalogue
+   et les boutons « fermer ». */
+[hidden] {
+  display: none !important;
+}
+
+/* ---- Navigation (commune à toutes les pages) ---- */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: var(--space-4);
+  align-items: center;
+  padding: var(--space-2) var(--page-margin);
+  background: var(--color-bg);
+  font-size: var(--text-nav);
+  letter-spacing: 0.02em;
+}
+
+.nav a:hover,
+.nav__fonts:hover,
+.nav__fonts.is-open {
+  color: var(--color-lime);
+}
+
+/* « Fonts » ouvre un menu : c'est un bouton, mais il doit se lire
+   comme les autres liens de la barre. */
+.nav__fonts {
+  font: inherit;
+  letter-spacing: inherit;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.nav__brand {
+  color: var(--color-lime);
+}
+
+/* ---- bascule FR / EN, poussee a droite de la barre ----
+   Une seule langue a la fois : cliquer recharge la page dans la
+   langue choisie (assets/js/i18n.js). */
+.nav__lang {
+  margin-left: auto;
+  display: flex;
+  align-items: stretch;
+  border: 1px solid var(--color-line);
+}
+
+.nav__lang-btn {
+  font: inherit;
+  letter-spacing: 0.06em;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  padding: 2px 9px;
+  cursor: pointer;
+}
+
+.nav__lang-btn + .nav__lang-btn {
+  border-left: 1px solid var(--color-line);
+}
+
+.nav__lang-btn:hover {
+  color: var(--color-lime);
+}
+
+.nav__lang-btn.is-active {
+  background: var(--color-orange);
+  color: var(--color-dark);
+}
+
+/* ---- Bouton pilule "VIEW FONT" / "DOWNLOAD" ---- */
+.btn-pill {
+  display: inline-block;
+  background: var(--color-text);
+  color: var(--color-dark);
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 5px 16px;
+  border-radius: var(--radius-pill);
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-pill:hover {
+  background: var(--color-lime);
+}
+
+/* ============================================================
+   COMPOSANTS PARTAGÉS — slider custom + menu déroulant custom
+   ------------------------------------------------------------
+   Utilisés à la fois sur la home (render-home.js) et sur les
+   pages spécimen (render-grid.js). Un seul style, un seul JS
+   (assets/js/dropdown.js, assets/js/slider.js).
+   ============================================================ */
+
+/* ---- Slider custom (thème BS.type) --------------------------
+   Piste = filet pointillé, marqueur = petit rectangle orange
+   vertical. La valeur (nombre ou mot) s'affiche à côté, câblée
+   en JS (assets/js/slider.js : BSSlider.init / BSSlider.create). */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-runnable-track {
+  height: 16px;
+  background:
+    linear-gradient(var(--color-orange), var(--color-orange)) left center / var(--range-progress, 0%) 2px no-repeat,
+    repeating-linear-gradient(90deg, var(--color-line) 0 2px, transparent 2px 6px) left center / 100% 1px no-repeat;
+}
+
+.slider::-moz-range-track {
+  height: 16px;
+  background: repeating-linear-gradient(90deg, var(--color-line) 0 2px, transparent 2px 6px) left center / 100% 1px no-repeat;
+}
+
+.slider::-moz-range-progress {
+  height: 2px;
+  background: var(--color-orange);
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 4px;
+  height: 16px;
+  border: none;
+  border-radius: 0;
+  background: var(--color-orange);
+}
+
+.slider::-moz-range-thumb {
+  width: 4px;
+  height: 16px;
+  border: none;
+  border-radius: 0;
+  background: var(--color-orange);
+}
+
+.slider:focus {
+  outline: none;
+}
+
+.slider:hover::-webkit-slider-thumb,
+.slider:focus::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px var(--color-select-bg-strong);
+}
+
+.slider:hover::-moz-range-thumb,
+.slider:focus::-moz-range-thumb {
+  box-shadow: 0 0 0 3px var(--color-select-bg-strong);
+}
+
+/* ---- Zone sélectionnable (typo, graisse, type de case…) ----
+   Fond vert acide de la charte au survol/à l'ouverture. */
+.bs-select-zone {
+  border-radius: 4px;
+  transition: background 0.12s ease;
+}
+
+.bs-select-zone:hover,
+.bs-select-zone.is-open {
+  background: var(--color-select-bg);
+}
+
+/* ---- Menu déroulant custom (pastille) ---- */
+.bs-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.bs-dropdown__trigger {
+  font-family: var(--font-ui);
+  font-size: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: transparent;
+  color: var(--color-text);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+
+.bs-dropdown__trigger::after {
+  content: " ⌄";
+  font-size: 0.9em;
+}
+
+.bs-dropdown__menu {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 160px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-line);
+  border-radius: 6px;
+  overflow: hidden;
+  list-style: none;
+  padding: 4px;
+  z-index: 20;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.bs-dropdown.is-open .bs-dropdown__menu {
+  display: block;
+}
+
+.bs-dropdown__menu li {
+  font-family: var(--font-ui);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 6px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.bs-dropdown__menu li:hover {
+  background: var(--color-select-bg-strong);
+}
+
+.bs-dropdown__menu li.is-selected {
+  color: var(--color-lime);
+}
+
+/* ============================================================
+   VIGNETTE VIDEO (bas droite, sur toutes les pages)
+   ------------------------------------------------------------
+   C'est un <canvas> et non un <video> : le fond vert est detoure
+   image par image en JS (assets/js/face-video.js), un <video> ne
+   pouvant pas etre rendu transparent. Elle defile avec le scroll.
+
+   --enter (0 -> 1, pose en JS) : 0 en haut de page, la vignette
+   est hors champ sous le bord bas et pivotee ; 1 des qu'on a
+   defile, elle est calee dans le coin. L'enveloppe porte cette
+   entree, le canvas porte la rotation d'inactivite : deux
+   transforms separees, sinon elles s'annulent.
+   ============================================================ */
+.bs-face {
+  position: fixed;
+  right: var(--page-margin);
+  bottom: var(--page-margin);
+  width: var(--face-w);
+  z-index: 40;
+  pointer-events: none;
+  opacity: 0;
+  transform:
+    translateY(calc((1 - var(--enter, 0)) * 150%))
+    rotate(calc((1 - var(--enter, 0)) * -38deg));
+  transform-origin: 50% 120%;
+  transition: opacity 0.25s ease;
+  will-change: transform;
+}
+
+.bs-face.is-ready {
+  opacity: 1;
+}
+
+.bs-face__bob {
+  /* balancement tres leger ; ease-in-out donne la pente douce
+     aux deux extremites, sans a-coup */
+  animation: bs-face-bob 3.6s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes bs-face-bob {
+  from { transform: translateY(-3px); }
+  to   { transform: translateY(3px); }
+}
+
+.bs-face__c {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* La vignette ne tourne plus au repos : la rotation d'inactivite a
+   ete retiree. Il ne reste que le balancement (.bs-face__bob). */
+
+@media (prefers-reduced-motion: reduce) {
+  .bs-face { transform: none; }
+  .bs-face__bob { animation: none; }
+}
+
+/* format etroit ou vertical : on garde une vignette lisible */
+@media (max-width: 560px) {
+  :root { --face-w: clamp(190px, 51vmin, 289px); }
+}
+
+/* Source de la vignette : presente dans le document (sinon le
+   navigateur ne decode pas les images) mais invisible. */
+.bs-face-src {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  width: 2px;
+  height: 2px;
+  opacity: 0.01;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ============================================================
+   BULLE « A PROPOS » — ouverte en cliquant la tete
+   ------------------------------------------------------------
+   Remplace l'ancienne page about. Pointe dirigee vers la tete,
+   en bas a droite. Contenu : assets/authorfaces/*.txt
+   ============================================================ */
+/* La zone cliquable n'est PAS le carre de la video : celui-ci est
+   transparent presque partout, et avale les clics tout autour de la
+   tete — d'autant plus depuis qu'elle est plus grande. On pose donc
+   un disque a l'endroit exact ou la tete a ete detouree ; les
+   proportions sont mesurees a l'execution par face-video.js et
+   deposees dans --tete-x / --tete-y / --tete-l / --tete-h. */
+.bs-face__hit {
+  position: absolute;
+  left: var(--tete-x, 19%);
+  top: var(--tete-y, 6%);
+  width: var(--tete-l, 62%);
+  height: var(--tete-h, 62%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.bs-face.is-clickable .bs-face__hit {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* disque orange derriere la tete quand la bulle est ouverte :
+   remonte de 10% et reduit de 20% */
+.bs-face::before {
+  content: "";
+  position: absolute;
+  /* cale sur la tete mesuree, comme la zone cliquable, puis
+     debordant d'un cinquieme pour faire une aureole */
+  left: var(--tete-x, 19%);
+  top: var(--tete-y, 6%);
+  width: var(--tete-l, 62%);
+  height: var(--tete-h, 62%);
+  margin: calc(var(--tete-h, 62%) / -5) calc(var(--tete-l, 62%) / -5);
+  padding: calc(var(--tete-h, 62%) / 5) calc(var(--tete-l, 62%) / 5);
+  box-sizing: content-box;
+  border-radius: 50%;
+  background: var(--color-orange);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(.34, 1.56, .64, 1);
+  z-index: -1;
+}
+
+.bs-face.is-about::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.about {
+  position: fixed;
+  right: calc(var(--page-margin) + var(--face-w) + var(--space-3));
+  /* la pointe vise le haut de la tete : proportionnel a --face-w,
+     pour suivre si on change la taille de la vignette */
+  bottom: calc(var(--page-margin) + var(--face-w) * 0.32);
+  width: min(1080px, calc(100vw - 2 * var(--page-margin) - var(--face-w) - var(--space-4)));
+  max-height: min(78vh, 900px);
+  z-index: 55;
+  background: var(--color-text);
+  color: var(--color-dark);
+  border: 3px solid var(--color-orange);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(14px) scale(0.98);
+  transform-origin: 100% 100%;
+  transition: opacity 0.22s ease, transform 0.32s cubic-bezier(.34, 1.56, .64, 1), visibility 0s linear 0.32s;
+}
+
+.about.is-open {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity 0.22s ease, transform 0.32s cubic-bezier(.34, 1.56, .64, 1), visibility 0s;
+}
+
+/* la pointe, vers la tete */
+.about::after {
+  content: "";
+  position: absolute;
+  right: -34px;
+  bottom: -3px;
+  width: 0;
+  height: 0;
+  border-left: 34px solid var(--color-orange);
+  border-top: 26px solid transparent;
+}
+
+.about__inner {
+  position: relative;
+  max-height: inherit;
+  overflow: auto;
+  padding: clamp(18px, 3vw, 46px);
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-orange) transparent;
+}
+
+.about__close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  background: transparent;
+  color: var(--color-dark);
+  border: 1px solid var(--color-dark);
+  padding: 4px 9px;
+  cursor: pointer;
+}
+.about__close:hover {
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+}
+
+/* titre : une fonte du catalogue tiree au sort PAR LETTRE */
+.about__title {
+  /* la hauteur est figee en JS pendant le defilement ; une lettre
+     un peu plus haute deborde plutot que de pousser le texte */
+  overflow: visible;
+  font-weight: normal;
+  font-size: clamp(1.8rem, 4.4vw, 3.6rem);
+  line-height: 1.15;
+  margin-bottom: clamp(16px, 2.5vw, 34px);
+  word-break: break-word;
+}
+
+/* Largeur figee en JS pendant le defilement des fontes : la bulle
+   ne saute plus a chaque changement de lettre. */
+.about__ch {
+  display: inline-block;
+  text-align: center;
+}
+.about__ch.is-space {
+  width: 0.32em;
+}
+
+.about__body {
+  font-family: var(--font-ui);
+  font-size: clamp(0.72rem, 1.05vw, 0.92rem);
+  line-height: 1.6;
+}
+
+.about__body p + p {
+  margin-top: 1.1em;
+}
+
+.about__contacts {
+  font-family: var(--font-ui);
+  font-size: clamp(0.72rem, 1.05vw, 0.92rem);
+  line-height: 1.6;
+  text-align: center;
+  margin-top: clamp(18px, 2.6vw, 38px);
+}
+
+@media (max-width: 720px) {
+  .about {
+    right: var(--page-margin);
+    left: var(--page-margin);
+    width: auto;
+    bottom: calc(var(--page-margin) + var(--face-w) * 0.62);
+  }
+  .about::after { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about,
+  .bs-face::before { transition: opacity 0.2s ease; }
+}

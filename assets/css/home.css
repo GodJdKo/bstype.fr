@@ -1,0 +1,660 @@
+/* ============================================================
+   HOME.CSS — STYLES DE LA PAGE D'ACCUEIL
+   ------------------------------------------------------------
+   Sections : hero (pastilles + titre), catalogue de fontes,
+   "Fonts in use", footer.
+   ============================================================ */
+
+/* ---------------- HERO ---------------- */
+
+.hero {
+  position: relative;
+  min-height: calc(100vh - 52px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 0 var(--page-margin) var(--space-3);
+  overflow: hidden;
+}
+
+/* Vidéo de fond : crop-to-fit (couvre toute la zone, recadrée au centre) */
+.hero__video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;   /* = crop to fit */
+  object-position: center;
+  z-index: 0;
+}
+
+/* Nuage de pastilles orange, positionnées en % depuis fonts-data.js */
+/* Zone des pastilles : elle s'arrete AVANT le titre et le
+   sous-titre, qui restent lisibles et cliquables. Le padding
+   retient les pastilles a l'interieur, derive comprise. */
+.pills {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none; /* la zone est transparente… */
+  padding: 0 calc(var(--face-w) + var(--space-2)) 0 var(--page-margin);
+  overflow: hidden;
+}
+
+/* La pastille est une BOITE qui porte le halo ; l'aplat orange et
+   le nom vivent dans un span a l'interieur. Deux elements, parce
+   qu'un ::before ne peut pas passer derriere le fond de son propre
+   parent des que celui-ci est anime. */
+.pill {
+  position: absolute;
+  pointer-events: auto; /* …mais les pastilles restent cliquables */
+  padding: 0.85em 1.6em;
+  color: var(--color-dark);
+  font-size: var(--text-pill);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  /* le halo : une ellipse en degrade, du noir de la charte */
+  background: radial-gradient(
+    ellipse at center,
+    var(--color-bg) 0%,
+    rgba(25, 25, 25, 0.72) 42%,
+    rgba(25, 25, 25, 0) 74%
+  );
+  /* derive lente : chaque pastille a son amplitude et sa duree,
+     tirees au sort en JS (render-home.js) */
+  animation: bs-drift var(--drift-t, 5s) ease-in-out var(--drift-d, 0s) infinite alternate;
+  will-change: transform;
+}
+
+.pill__label {
+  display: block;
+  background: var(--color-orange);
+  padding: 0.5em 1.1em;
+  transition: background 0.15s ease;
+}
+
+.pill:hover .pill__label {
+  background: var(--color-lime);
+}
+
+@keyframes bs-drift {
+  from { transform: translate(0, 0); }
+  to   { transform: translate(var(--drift-x, 0), var(--drift-y, 0)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pill { animation: none; }
+}
+
+
+
+/* bande noire pleine largeur derriere le nom : elle deborde des
+   marges de la page pour toucher les deux bords */
+.hero__title {
+  position: relative;
+  z-index: 2;
+}
+
+/* la bande descend jusqu'au bas de la fenetre : plus aucun bout
+   de video ne reapparait sous le titre et le sous-titre */
+.hero__title::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--page-margin));
+  right: calc(-1 * var(--page-margin));
+  top: 0;
+  bottom: calc(-1 * (var(--space-3) + 100%));
+  background: var(--color-bg);
+  z-index: -1;
+}
+
+.hero__title {
+  font-family: var(--font-ui);
+  font-weight: normal;
+  color: var(--color-lime);
+  font-size: var(--text-hero);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+}
+
+.hero__subtitle {
+  position: relative;
+  z-index: 2;
+  font-size: var(--text-subtitle);
+  text-transform: uppercase;
+  margin-top: var(--space-1);
+}
+
+/* ---------------- CATALOGUE ----------------
+   Une fonte = un MODULE, avec le meme contour « terminal ASCII »
+   et les memes composants (menus, sliders, boutons) que les pages
+   specimen. Le contour vient de .grid-cell (grid.css n'est pas
+   charge ici, la regle est reprise ci-dessous), les composants de
+   specimen.css. */
+
+.catalog {
+  padding: var(--space-4) var(--page-margin);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+/* Pas de "gap" ici : c'est la marge de chaque module qui se replie
+   avec lui, sinon un module masque laisserait son espace. */
+.catalog__list {
+  display: block;
+}
+
+.catalog__list > .font-row {
+  margin-bottom: var(--space-3);
+}
+
+/* ---- module « voir tout » / « fermer » ----
+   Meme dessin que le bouton de telechargement des pages de fonte :
+   un aplat orange, le mot en grand, le rappel a droite. */
+.catalog__btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: clamp(84px, 12vw, 160px);
+  padding: 0 clamp(14px, 2vw, 30px);
+  background: var(--color-orange);
+  color: var(--color-dark);
+  font-family: var(--font-ui);
+  font-size: clamp(1.6rem, 5vw, 4rem);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.catalog__btn:hover {
+  background: var(--color-lime);
+}
+
+.catalog__btn--close {
+  min-height: clamp(54px, 7vw, 90px);
+  font-size: clamp(1.1rem, 3vw, 2.4rem);
+  background: var(--color-text);
+}
+
+.catalog__btn-label {
+  flex: none;
+  min-width: 0;
+  white-space: nowrap;
+  line-height: 0.95;
+}
+
+.catalog__btn-label i {
+  font-style: normal;
+}
+
+.catalog__btn-label i + i::before {
+  content: "\00a0";
+}
+
+.catalog__btn .dots {
+  opacity: 0.5;
+}
+
+.catalog__btn-meta {
+  flex: none;
+  margin-left: auto;
+  max-width: 45%;
+  font-size: var(--text-meta);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* module etroit : le mot se coupe en deux et le rappel passe dessous */
+@media (max-width: 560px) {
+  .catalog__btn {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    padding: clamp(10px, 3vw, 20px);
+  }
+  .catalog__btn .dots { display: none; }
+  .catalog__btn-label i { display: block; }
+  .catalog__btn-label i + i::before { content: none; }
+  .catalog__btn-meta { margin-left: 0; max-width: 100%; }
+}
+
+/* contour du module : filet exterieur plein + filet interieur
+   dont les montants sont en pointilles verticaux */
+/* Depliage et repliage : le module s'ouvre en hauteur, en fondu.
+   max-height plutot que height : on n'a pas besoin de connaitre la
+   hauteur exacte, et la valeur haute n'est jamais atteinte. */
+.font-row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-line);
+  padding: 10px;
+  container-type: inline-size;
+  overflow: hidden;
+  max-height: 1400px;
+  opacity: 1;
+  transition:
+    max-height 0.45s cubic-bezier(.22, .61, .36, 1),
+    opacity 0.3s ease,
+    margin-bottom 0.45s cubic-bezier(.22, .61, .36, 1),
+    padding 0.45s cubic-bezier(.22, .61, .36, 1),
+    border-width 0.45s cubic-bezier(.22, .61, .36, 1);
+}
+
+.font-row.is-folded {
+  max-height: 0;
+  opacity: 0;
+  margin-bottom: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .font-row { transition: none; }
+}
+.font-row::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  background:
+    repeating-linear-gradient(180deg, var(--color-line) 0 6px, transparent 6px 10px) left top / 1px 100% no-repeat,
+    repeating-linear-gradient(180deg, var(--color-line) 0 6px, transparent 6px 10px) right top / 1px 100% no-repeat;
+  pointer-events: none;
+}
+
+/* Le corps du module accueille LE MODULE EDITEUR partage
+   (assets/js/editor-module.js). L'apercu garde une hauteur FIXE —
+   le texte tape ne fait jamais grandir le module — et les reglages
+   sortent en tiroir, EN POUSSANT l'apercu : rien n'est recouvert. */
+.font-row__body {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.font-row .bs-editor {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+  /* HAUTEUR IMPOSEE au module entier : ni le texte tape, ni la
+     colonne de reglages ne peuvent le faire grandir. Ce qui
+     depasse defile a l'interieur. */
+  height: clamp(260px, 30vw, 380px);
+}
+
+/* hauteur imposee : ni le texte, ni le corps de la fonte, ni
+   l'interligne ne peuvent pousser le module */
+.font-row .editor__prev-wrap {
+  flex: 1 1 auto;
+  height: 100%;
+  min-height: 0;
+  min-width: 0;
+}
+
+.font-row .editor__preview {
+  height: 100%;
+  min-height: 0;
+}
+
+/* ---- le tiroir des reglages ----
+   Colonne de boutons collee au bord gauche du module : la poignee
+   (des fleches sur toute sa hauteur), « voir », « hasard ». Meme
+   largeur, quelques pixels d'ecart. Ouvert, les reglages prennent
+   leur place et l'apercu se decale — rien n'est recouvert. */
+.editor__rail {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  width: 34px;
+  margin-right: var(--space-2);   /* espace de la charte avant le texte */
+}
+
+.font-row .editor__panel {
+  flex: 0 0 0px;
+  width: 0;
+  min-width: 0;
+  padding: 0;
+  gap: 6px;
+  height: 100%;
+  font-size: 0.78rem;
+  /* Jamais de debordement horizontal (les sliders sortaient du
+     tiroir pendant sa fermeture), mais on peut defiler du regard
+     vers le bas quand le module est court — format vertical. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-orange) transparent;
+  transition: flex-basis 0.26s ease, width 0.26s ease, margin 0.26s ease;
+}
+
+.font-row .bs-editor.is-drawer-open .editor__panel {
+  flex: 0 0 clamp(200px, 34%, 300px);
+  width: clamp(200px, 34%, 300px);
+  margin-right: var(--space-2);
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .font-row .editor__panel { transition: none; }
+}
+
+/* la poignee : elle prend toute la hauteur restante */
+.editor__drawer-toggle {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* fleches : gris clair de la charte */
+  background: var(--color-text);
+  color: var(--color-dark);
+  border: 0;
+  padding: 4px 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.editor__drawer-toggle:hover {
+  background: var(--color-lime);
+}
+
+/* autant de fleches qu'il en faut pour remplir la hauteur ;
+   un poil plus epaisses que le trace normal */
+.editor__arrows {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.editor__arrows i {
+  display: block;
+  font-family: var(--font-ui);
+  font-style: normal;
+  font-size: 0.95rem;
+  line-height: 1.05;
+  -webkit-text-stroke: 1px currentColor;
+  text-stroke: 1px currentColor;
+}
+
+/* « voir » et « hasard » : meme largeur que la poignee, libelle a
+   la verticale, lettres l'une sur l'autre et a l'endroit */
+.editor__rail-btn {
+  flex: none;
+  width: 100%;
+  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 0.04em;
+  padding: 10px 0;
+  margin: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  text-transform: uppercase;
+  border: 0;
+  cursor: pointer;
+}
+
+/* « voir » en orange, « hasard » en gris clair */
+.font-row .editor__view.editor__rail-btn {
+  margin-left: 0;
+  background: var(--color-orange);
+  color: var(--color-dark);
+}
+
+.font-row .editor__random.editor__rail-btn {
+  background: var(--color-text);
+  color: var(--color-dark);
+}
+
+.font-row .editor__view.editor__rail-btn:hover,
+.font-row .editor__random.editor__rail-btn:hover {
+  background: var(--color-lime);
+  color: var(--color-dark);
+}
+
+.font-row .ctl__box {
+  --sl-h: 32px;
+  height: 32px;
+}
+
+.font-row .ctl__head {
+  padding-bottom: 1px;
+}
+
+/* les boutons de justification restent CARRES */
+.font-row .editor__align {
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+/* ---------------- FONTS IN USE ----------------
+   Une ligne par fonte ayant des travaux dans fonts/<slug>/inUse/.
+   Cliquer la ligne la deplie : les travaux apparaissent DERRIERE.
+   Les filets reprennent le pointille du reste du site. */
+
+.in-use {
+  background: var(--color-orange);
+  color: var(--color-text);
+  padding: var(--space-4) var(--page-margin) var(--space-5);
+}
+
+.in-use__title {
+  font-family: var(--font-ui);
+  font-weight: normal;
+  font-size: var(--text-section);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: var(--space-4);
+}
+
+/* Lignes en grille (pas un tableau) : chaque ligne se deplie. */
+.in-use__list {
+  font-size: var(--text-meta);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.in-use__head,
+.in-use__row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  align-items: baseline;
+  padding: 14px 0 10px;
+}
+
+/* filets pleins ; leur couleur ne suit PAS celle du texte */
+.in-use__head,
+.in-use__row {
+  border-bottom: 1px solid var(--color-text);
+}
+
+/* toute la ligne est cliquable ; au survol le texte passe au noir */
+.in-use__row {
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+
+.in-use__row:hover,
+.in-use__row:focus-visible {
+  color: var(--color-dark);
+  outline: none;
+}
+
+.in-use__row > span:first-child::before {
+  content: "> ";
+}
+
+/* ---- la bulle flottante des travaux ----
+   Survoler une ligne l'ouvre : elle suit la souris et flotte
+   au-dessus de la page. La section ne change JAMAIS de hauteur.
+   Meme dessin que la bulle « a propos » : gris clair, contour
+   orange, visuels d'un cote, texte de l'autre. */
+.inuse-bubble {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 70;
+  width: min(560px, 68vw);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 12px;
+  background: var(--color-text);
+  color: var(--color-dark);
+  border: 3px solid var(--color-orange);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;   /* elle ne doit jamais voler le survol */
+  transition: opacity 0.16s ease, visibility 0s linear 0.16s;
+}
+
+.inuse-bubble.is-open {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.16s ease, visibility 0s;
+}
+
+.inuse-bubble__media {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  align-content: start;
+}
+
+.inuse-bubble__media:only-child {
+  grid-column: span 2;
+}
+
+.inuse-bubble__media img,
+.inuse-bubble__media video {
+  width: 100%;
+  height: clamp(70px, 9vw, 120px);
+  object-fit: cover;
+  display: block;
+}
+
+/* un seul visuel : il prend toute la colonne */
+.inuse-bubble__media > :only-child {
+  grid-column: span 2;
+  height: clamp(120px, 16vw, 220px);
+}
+
+.inuse-bubble__side {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.inuse-bubble__side h3 {
+  font-size: clamp(1.1rem, 2.2vw, 1.9rem);
+  font-weight: normal;
+  line-height: 1.05;
+  margin-bottom: 8px;
+}
+
+.inuse-bubble__side p {
+  font-family: var(--font-ui);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  text-transform: none;
+  letter-spacing: 0;
+  overflow: hidden;
+}
+
+.inuse-bubble__cta {
+  margin-top: auto;
+  align-self: flex-start;
+  background: var(--color-dark);
+  color: var(--color-orange);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+}
+
+@media (max-width: 720px) {
+  .inuse-bubble { display: none; }   /* pas de survol sur mobile */
+}
+
+/* ---------------- FOOTER ---------------- */
+
+.footer {
+  background: var(--color-text);
+  color: var(--color-dark);
+  min-height: 55vh;
+  padding: var(--space-4) var(--page-margin);
+}
+
+.footer__title {
+  font-family: var(--font-ui);
+  font-weight: normal;
+  font-size: var(--text-footer);
+  line-height: 0.95;
+}
+
+.footer__note {
+  margin-top: var(--space-3);
+  font-size: var(--text-meta);
+  text-transform: uppercase;
+}
+
+/* ---------------- RESPONSIVE ---------------- */
+
+@media (max-width: 720px) {
+  /* Les pastilles passent en flux normal, plus lisible en mobile */
+  .pills {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    padding-top: var(--space-3);
+    margin-bottom: auto;
+  }
+
+  .pill {
+    position: static;
+    /* en flux normal la derive ferait se chevaucher les pastilles :
+       on la coupe, la mise en page suffit */
+    animation: none;
+  }
+
+  .hero {
+    justify-content: flex-end;
+  }
+
+  .font-row__controls {
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .font-row__demo {
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  .in-use__head,
+  .in-use__row {
+    font-size: 0.65rem;
+  }
+}

@@ -1,0 +1,156 @@
+/* ============================================================
+   FONTS.CSS — DECLARATIONS @FONT-FACE
+   ------------------------------------------------------------
+   FICHIER GENERE : ne pas editer a la main.
+   Il est reecrit par  node scripts/sync-fonts.js  a partir des
+   fichiers presents dans assets/fonts/. Pour ajouter une police
+   ou une graisse : deposer le fichier puis relancer le script.
+
+   Le nom "font-family" correspond au champ cssFamily de
+   assets/js/fonts-data.js ; les graisses d'une meme famille
+   partagent ce nom et se distinguent par font-weight/font-style.
+   ============================================================ */
+
+@font-face {
+  font-family: "BS Mono";
+  src: url("../fonts/BSMONO-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HEXCD";
+  src: url("../fonts/HEXCD-ExtraLight.otf") format("opentype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HEXCD";
+  src: url("../fonts/HEXCD-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HEXCD";
+  src: url("../fonts/HEXCD-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HEXCD";
+  src: url("../fonts/HEXCD-Black.otf") format("opentype");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "HEXCD";
+  src: url("../fonts/HEXCD-ExtraBlack.otf") format("opentype");
+  font-weight: 950;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Saint Trop";
+  src: url("../fonts/SAINTTROP-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Arutext Inverted";
+  src: url("../fonts/ARUTEXT-Inverted.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Arutext Smearing";
+  src: url("../fonts/ARUTEXT-Smearing.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Arutext Tipnib";
+  src: url("../fonts/ARUTEXT-Tipnib.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Arutext";
+  src: url("../fonts/ARUTEXT-Inverted.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Baton";
+  src: url("../fonts/BATON-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Persvrance Carre 45 Fusion";
+  src: url("../fonts/Persvrance-Carre45Fusion-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Persvrance Fusion";
+  src: url("../fonts/PERSVRANCE-Fusion-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Persvrance";
+  src: url("../fonts/PERSVRANCE-Fusion-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Jalleau";
+  src: url("../fonts/JALLEAU-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Jalleau";
+  src: url("../fonts/JALLEAU-Italic.otf") format("opentype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Jalleau";
+  src: url("../fonts/JALLEAU-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}

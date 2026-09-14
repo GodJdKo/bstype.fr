@@ -1,0 +1,32 @@
+DOSSIER DES FICHIERS DE POLICE
+==============================
+
+Depose ici tes fichiers .otf .ttf .woff .woff2
+
+NOMMAGE — c'est la seule regle importante :
+
+    FAMILLE-Style.otf
+
+  FAMILLE  le nom de la fonte, en majuscules, sans espace.
+           Toutes les graisses d'une meme fonte doivent avoir
+           EXACTEMENT le meme prefixe.
+  Style    la graisse ou la variante.
+
+Exemples :
+    JALLEAU-Italic.otf
+    HEXCD-Regular.otf
+    HEXCD-Bold.otf          <- meme famille que le precedent
+    HEXCD-ExtraLight.otf    <- idem
+    SAINTTROP-Regular.ttf
+
+Styles reconnus automatiquement (graisse deduite du nom) :
+    Thin 100 · ExtraLight 200 · Light 300 · Regular 400
+    Medium 500 · SemiBold 600 · Bold 700 · ExtraBold 800
+    Black 900
+    ...Italic  ->  passe la variante en italique
+Un nom non reconnu (ex: "Nuked", "Inverted") reste en 400 normal.
+
+APRES AVOIR DEPOSE UN FICHIER
+-----------------------------
+Double-clique "Ajouter une fonte.command" a la racine du projet.
+Tout le reste se met a jour tout seul.

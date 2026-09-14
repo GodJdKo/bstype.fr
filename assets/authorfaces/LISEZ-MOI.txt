@@ -1,0 +1,39 @@
+DOSSIER DES TETES ET DES TEXTES
+===============================
+
+Deux choses vivent ici :
+
+1. LES VIDEOS
+   PRENOM + initiale du nom, en majuscules :
+     Enzo Cetera   -> ENZOC.mp4
+     Lucas Pernet  -> LUCASP.mp4
+   Fond vert, il est detoure automatiquement.
+
+2. LES TEXTES DE LA BULLE
+   Meme nom, en .txt :
+     ENZOC.txt, LUCASP.txt
+   C'est ce qui s'affiche quand on clique la tete en bas a droite
+   de la page de la fonte.
+
+   bstype.txt  -> le texte de la bulle de la PAGE D'ACCUEIL
+                  (la presentation de la fonderie).
+
+FORMAT D'UN .txt
+----------------
+Ecris normalement. Une ligne vide separe deux paragraphes.
+
+Une ligne contenant seulement  ---  ouvre le bloc de CONTACTS :
+tout ce qui suit est centre, une ligne par contact.
+
+Exemple :
+
+    Enzo Cetera dessine des caracteres modulaires.
+
+    Il travaille aussi le motion et l'image de synthese.
+
+    ---
+    enzocetera.pro@gmail.com
+    enzocetera.com
+    insta@jdko._
+
+Apres toute modification : double-clique Maj.command.

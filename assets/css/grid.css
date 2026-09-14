@@ -1,0 +1,619 @@
+/* ============================================================
+   GRID.CSS — GRILLE + CONTOUR DES ZONES (pages specimen)
+   ------------------------------------------------------------
+   Grille CSS 4 colonnes, chaque zone s'etend sur 1 a 4 colonnes
+   via --cell-span (pose en JS, render-grid.js).
+
+   CONTOUR « terminal ASCII 90s » : un filet exterieur plein, et
+   un filet interieur dont les MONTANTS sont en pointilles
+   verticaux (comme une colonne de caracteres « | »).
+
+   L'habillage (menus, panneau editeur, sliders) est dans
+   specimen.css.
+   ============================================================ */
+
+/* Le temps que les vraies fontes arrivent, la grille reste
+   invisible : elle apparait une seule fois, deja composee.
+   (classe posee et retiree par assets/js/render-grid.js) */
+.specimen-grid.is-waiting {
+  opacity: 0;
+}
+
+.specimen-grid {
+  opacity: 1;
+  transition: opacity 0.25s ease;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-flow: dense;
+  /* Les rangees s'ajustent a leur contenu : un module court (le
+     bouton de telechargement) ne reserve plus la hauteur d'un
+     module entier. La hauteur des modules normaux vient de leur
+     min-height, donc rien ne bouge pour eux. */
+  grid-auto-rows: min-content;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+}
+
+/* Hauteur de module : les zones sont hautes (maquette). Une zone
+   peut occuper plusieurs rangees via "rows" dans gridLayout. */
+/* Le module download tient sur sa propre hauteur, en plusieurs
+   tailles tirees au sort (data-size). Toujours un seul bouton. */
+.grid-cell[data-type="download"] {
+  grid-row: span 1;
+  min-height: 0;
+  /* seul module a suivre sa propre hauteur : il s'etire quand meme
+     jusqu'au bas de sa rangee, donc jamais de trou */
+  height: auto;
+}
+.grid-cell[data-size="s"]  { --dl-h: 84px;  --dl-text: clamp(1rem, 2vw, 1.6rem); }
+.grid-cell[data-size="m"]  { --dl-h: 130px; --dl-text: clamp(1.3rem, 3vw, 2.4rem); }
+.grid-cell[data-size="l"]  { --dl-h: 200px; --dl-text: clamp(1.6rem, 4vw, 3.4rem); }
+.grid-cell[data-size="xl"] { --dl-h: 300px; --dl-text: clamp(2rem, 5.5vw, 5rem); }
+
+.grid-cell {
+  position: relative;
+  grid-column: span var(--cell-span, 1);
+  grid-row: span var(--cell-rows, 1);
+  /* HAUTEUR IMPOSEE, pas un minimum : ni le texte de l'editeur, ni
+     la grille de glyphes ne peuvent faire grandir un module. Ce qui
+     depasse defile A L'INTERIEUR.
+     --cell-h est pose en JS (ajusterGrille) : toutes les cases d'une
+     rangee partagent la meme hauteur, mais les rangees, elles, n'ont
+     pas toutes la meme — un media prend la hauteur qui respecte sa
+     forme, les autres modules une hauteur tiree au sort. */
+  height: var(--cell-h, calc(var(--cell-rows, 1) * var(--zone-h, 480px)));
+  min-height: 0;
+  overflow: hidden;
+  /* contexte de container query : chaque module se reorganise
+     selon SA largeur, pas celle de l'ecran (reste modulaire). */
+  container-type: inline-size;
+  /* min-width:0 obligatoire : les lignes de points (.dots) sont un
+     texte long ; sans ca la case refuse de retrecir et la grille
+     retombe sur une seule colonne. */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-line);
+  padding: 10px;
+  background: none;
+}
+
+/* filet interieur : haut/bas pleins, montants en pointilles */
+.grid-cell::before {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-top: 1px solid var(--color-line);
+  border-bottom: 1px solid var(--color-line);
+  background:
+    repeating-linear-gradient(180deg, var(--color-line) 0 6px, transparent 6px 10px) left top / 1px 100% no-repeat,
+    repeating-linear-gradient(180deg, var(--color-line) 0 6px, transparent 6px 10px) right top / 1px 100% no-repeat;
+  pointer-events: none;
+}
+
+.zone__body {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+/* ---------------- MEDIA ---------------- */
+.grid-cell__media {
+  overflow: hidden;
+}
+
+.grid-cell__media,
+.grid-cell__media-stage {
+  min-height: 0;
+}
+
+.grid-cell__media-stage {
+  flex: 1;
+  overflow: hidden;
+}
+
+.grid-cell__media img,
+.grid-cell__media video,
+.grid-cell__media-stage img,
+.grid-cell__media-stage video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.grid-cell__media--placeholder {
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text);
+  opacity: 0.3;
+  text-transform: uppercase;
+  font-size: var(--text-meta);
+  letter-spacing: 0.05em;
+}
+
+.grid-cell__media--loading {
+  opacity: 0.3;
+}
+
+/* ---------------- CHARACTERSET (grille + apercu) ----------------
+   L'apercu du glyphe fait partie de ce module : grille a gauche,
+   grand caractere a droite. Grille CSS (pas flex-wrap) pour que
+   les deux moities soient BORNEES par la hauteur du module. */
+.grid-cell__charset {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(110px, 34%);
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--space-2);
+  min-height: 0;
+}
+@container (max-width: 340px) {
+  .grid-cell__charset {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.8fr);
+  }
+}
+
+.cs__grid {
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--cs-cell, 34px), 1fr));
+  grid-auto-rows: var(--cs-cell, 34px);
+  align-content: start;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* ascenseur au style des sliders */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-orange) transparent;
+}
+
+.cs__grid::-webkit-scrollbar {
+  width: 9px;
+}
+.cs__grid::-webkit-scrollbar-track {
+  background: repeating-linear-gradient(180deg, var(--color-line) 0 6px, transparent 6px 10px) center top / 1px 100% no-repeat;
+}
+.cs__grid::-webkit-scrollbar-thumb {
+  background: var(--color-orange);
+  border-radius: 0;
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* La case reste STRICTEMENT sur la grille : le recentrage optique
+   s'applique au glyphe a l'interieur, jamais a la case elle-meme
+   (sinon chaque case se decale et la grille part en biais). */
+.cs__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(var(--cs-cell, 34px) * 0.62);
+  line-height: 1;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.cs__glyph {
+  display: block;
+  line-height: 1;
+  pointer-events: none;
+}
+.cs__cell:hover {
+  background: var(--color-text);
+  color: var(--color-dark);
+}
+.cs__cell.is-picked {
+  background: var(--color-orange);
+  color: var(--color-dark);
+}
+
+.cs__preview {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--color-text);
+}
+
+/* le glyphe est pose sur sa vraie ligne de base (calcul en JS) */
+.cs__big {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  line-height: 1;
+  color: var(--color-orange);
+}
+
+/* Le point de code du caractere choisi (« U+0041 »), pose en haut a
+   gauche de l'apercu. Sans ces regles il heritait de la couleur du
+   texte du site — clair sur clair, donc invisible. */
+.cs__code {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  z-index: 2;
+  font-family: var(--font-ui);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  color: var(--color-dark);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+/* ---- lignes de metriques ----
+   ascendante, hauteur de capitale, hauteur d'oeil, ligne de base,
+   descendante. Filets pointilles comme le reste du site. */
+/* metriques : masquees par defaut, le bouton "metrics" les montre */
+.cs__metrics {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: none;
+}
+
+.cs__preview.show-metrics .cs__metrics {
+  display: block;
+}
+
+/* Barre d'outils, en bas de l'apercu : bascule des metriques puis
+   menu de choix de la graisse montree. Meme hauteur, meme dessin. */
+.cs__tools {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  gap: 5px;
+  min-width: 0;
+}
+
+/* bouton bascule, dans le style des autres boutons */
+.cs__toggle {
+  flex: none;
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--color-dark);
+  border: 1px solid var(--color-dark);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+/* Menu deroulant de la graisse : meme boite, meme hauteur que le
+   bouton « metriques », avec la ligne de points et le V des autres
+   menus du site. */
+.cs__pick {
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--color-dark);
+  border: 1px solid var(--color-dark);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.cs__pick:hover,
+.cs__pick.is-open {
+  background: var(--color-lime);
+  border-color: var(--color-lime);
+}
+
+.cs__pick-val {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.cs__pick-chev {
+  flex: none;
+}
+
+/* module etroit : le menu passe sous la bascule */
+@container (max-width: 340px) {
+  .cs__tools { flex-wrap: wrap; }
+}
+
+.cs__toggle:hover {
+  background: var(--color-lime);
+  border-color: var(--color-lime);
+}
+
+.cs__toggle.is-on {
+  background: var(--color-orange);
+  border-color: var(--color-orange);
+}
+
+.cs__metric {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--color-dark) 0 2px, transparent 2px 6px);
+  opacity: 0.4;
+}
+
+.cs__metric.is-base {
+  background: var(--color-dark);
+  opacity: 0.65;
+}
+
+/* Deux traits trop proches : le nom du second passe a droite, pour
+   qu'ils restent lisibles tous les deux. La bascule est decidee en
+   JS (layoutPreview, assets/js/render-grid.js). */
+.cs__metric.is-droite::after {
+  left: auto;
+  right: 4px;
+}
+
+.cs__metric::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 4px;
+  bottom: 2px;
+  font-family: var(--font-ui);
+  font-size: 0.55rem;
+  letter-spacing: 0.04em;
+  color: var(--color-dark);
+  opacity: 0.75;
+}
+
+/* ---------------- INFO (editorial) ---------------- */
+.grid-cell__info {
+  gap: var(--space-2);
+  justify-content: flex-start;
+  overflow: auto;
+}
+
+.grid-cell__info h3 {
+  font-size: var(--text-meta);
+  font-weight: normal;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-orange);
+  margin-bottom: 4px;
+}
+
+.grid-cell__info p {
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--color-text);
+}
+
+/* ---------------- RESPONSIVE ---------------- */
+/* Les largeurs ne sont PLUS rognees ici. Couper « span 3 » a
+   « span 2 » faisait qu'une rangee ne pavait plus la grille : le
+   module de trop passait a la ligne et laissait un trou derriere
+   lui. C'est maintenant ajusterGrille(), dans
+   assets/js/render-grid.js, qui recalcule les largeurs pour le
+   nombre reel de colonnes — a l'affichage et a chaque changement
+   de taille de fenetre. */
+@media (max-width: 900px) {
+  .specimen-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .specimen-grid {
+    grid-template-columns: 1fr;
+    --zone-h: 380px;
+  }
+}
+
+/* ---------------- DOWNLOAD ----------------
+   Une seule graisse : un bouton. Plusieurs graisses : deux moities,
+   « tout » (le .zip) et « selection » (la graisse choisie juste en
+   dessous), separees par une vraie bande de fond. */
+.grid-cell__download {
+  padding: 0;
+}
+
+.download-btn {
+  flex: 1;
+  min-height: var(--dl-h, 130px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 clamp(14px, 2vw, 30px);
+  background: var(--color-orange);
+  color: var(--color-dark);
+  font-family: var(--font-ui);
+  font-size: var(--dl-text, clamp(1.4rem, 3.4vw, 3rem));
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  overflow: hidden;
+}
+
+.download-btn:hover {
+  background: var(--color-lime);
+}
+
+.download-btn .dots {
+  opacity: 0.5;
+}
+
+/* Le mot reste sur UNE ligne : render-grid.js reduit le corps
+   jusqu'a ce qu'il rentre dans la largeur du bouton. Il ne se coupe
+   en deux (classe is-stacked) que s'il deviendrait illisible. */
+.download-btn__label {
+  flex: none;
+  min-width: 0;
+  white-space: nowrap;
+  line-height: 0.95;
+}
+
+.download-btn__label i {
+  display: inline;
+  font-style: normal;
+}
+
+/* « tout » / « selection » : precision, pas titre */
+.download-btn__which {
+  font-weight: normal;
+  font-size: 0.5em;
+  letter-spacing: 0.08em;
+}
+.download-btn__which::before {
+  content: "\00a0";
+}
+
+.download-btn.is-stacked .download-btn__label {
+  white-space: normal;
+}
+.download-btn.is-stacked .download-btn__label i,
+.download-btn.is-stacked .download-btn__which {
+  display: block;
+}
+.download-btn.is-stacked .download-btn__which::before {
+  content: none;
+}
+
+.download-btn__meta {
+  flex: none;
+  margin-left: auto;
+  max-width: 55%;
+  font-size: var(--text-meta);
+  letter-spacing: 0.05em;
+  align-self: flex-end;
+  padding-bottom: clamp(10px, 1.6vw, 22px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- module coupe en deux ---- */
+.grid-cell__download--split {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: var(--space-2);          /* separation franche entre les deux */
+  background: var(--color-bg);
+}
+
+.download-half {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.grid-cell__download--split .download-btn {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: clamp(10px, 1.6cqw, 24px);
+}
+
+.grid-cell__download--split .download-btn .dots {
+  display: none;
+}
+
+.grid-cell__download--split .download-btn__meta {
+  align-self: flex-start;
+  margin-left: 0;
+  max-width: 100%;
+  padding-bottom: 0;
+}
+
+/* choix de la graisse a telecharger : meme dessin que les autres
+   selecteurs du site, sous son bouton */
+.download-pick {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: var(--color-text);
+  color: var(--color-dark);
+  border: 0;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+
+.download-pick:hover,
+.download-pick.is-open {
+  background: var(--color-lime);
+}
+
+.download-pick__val {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.download-pick__chev {
+  flex: none;
+}
+
+/* pas la place cote a cote : les deux moities s'empilent */
+@container (max-width: 420px) {
+  .grid-cell__download--split {
+    flex-direction: column;
+  }
+}
+
+/* bouton seul dans un module etroit : le rappel passe sous le mot */
+@container (max-width: 340px) {
+  .grid-cell__download:not(.grid-cell__download--split) .download-btn {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 4px;
+    padding: clamp(10px, 3cqw, 20px);
+  }
+  .grid-cell__download:not(.grid-cell__download--split) .download-btn .dots {
+    display: none;
+  }
+  .grid-cell__download:not(.grid-cell__download--split) .download-btn__meta {
+    align-self: flex-start;
+    margin-left: 0;
+    max-width: 100%;
+    padding-bottom: 0;
+  }
+}
+
+
+/* Temoin de ligne de base du jeu de caracteres : une boite de
+   hauteur nulle, calee sur la base du texte. Elle ne se voit pas ;
+   elle sert a MESURER ou le navigateur a pose la ligne de base
+   (voir layoutPreview dans assets/js/render-grid.js). */
+.cs__base-probe {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  vertical-align: baseline;
+  overflow: hidden;
+}

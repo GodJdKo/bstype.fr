@@ -1,0 +1,3 @@
+BS Mono à l'œuvre : interfaces, affichage de code, signalétique
+technique. Remplace ce texte par le tien — il s'affiche en tête de
+la ligne dépliée dans la section "Fonts in use".

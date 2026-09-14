@@ -1,0 +1,564 @@
+/* ============================================================
+   SPECIMEN.CSS — HABILLAGE DES PAGES SPECIMEN
+   ------------------------------------------------------------
+   Style « interface terminal ASCII 90s » :
+   - lignes de points de remplissage (vrais caracteres « . »)
+   - menus deroulants en aplat (vert acide / orange), contour de
+     la couleur du fond, ligne survolee en gris clair
+   - selecteurs de l'editeur : aplat gris, sans contour
+   - sliders : petit rectangle orange sur une ligne de points
+   - selecteur de couleur maison (3 sliders RGB/HSV + formats)
+   Police d'interface : BS Mono partout.
+   La grille et le contour des zones sont dans grid.css.
+   ============================================================ */
+
+/* Ligne de points de remplissage. Vrai texte, coupe par overflow. */
+.dots {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  min-width: 0;
+  user-select: none;
+}
+.dots::after {
+  content: "................................................................................................................................................................";
+}
+
+/* ---------------- BARRES DE META ---------------- */
+.specimen {
+  margin: var(--space-3) var(--page-margin) var(--space-4);
+  font-family: var(--font-ui);
+}
+
+.specimen__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-meta);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-orange);
+  padding: var(--space-1) 0;
+}
+.specimen__meta::before,
+.specimen__meta::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--color-orange);
+}
+.specimen__meta-name {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.specimen-foot {
+  background: var(--color-text);
+  color: var(--color-dark);
+  padding: var(--space-4) var(--page-margin);
+}
+.specimen-foot span {
+  font-family: var(--font-ui);
+  font-size: var(--text-footer);
+  line-height: 0.95;
+}
+
+/* ---------------- EN-TETE DE ZONE ---------------- */
+.zone__head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: -6px -6px var(--space-2);
+  padding: 4px 8px;
+  border: 1px solid var(--color-line);
+  background: var(--color-bg);
+  font-size: var(--text-meta);
+  letter-spacing: 0.06em;
+  color: var(--color-lime);
+}
+
+.zone__name {
+  white-space: nowrap;
+}
+
+.zone__chev {
+  font-family: var(--font-ui);
+  font-size: 1rem;
+  font-weight: bold;
+  line-height: 0.6;
+  background: transparent;
+  color: inherit;
+  border: none;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.zone__chev {
+  font-weight: normal;
+  font-size: var(--text-meta);
+  line-height: 1;
+}
+/* survol de la BARRE entiere (elle ouvre le menu) : tout en orange */
+.zone__head {
+  cursor: pointer;
+}
+.zone__head:hover,
+.zone__head:focus-visible,
+.zone__head:has(.zone__chev.is-open) {
+  color: var(--color-orange);
+  outline: none;
+}
+
+/* ---------------- MENUS DEROULANTS ----------------
+   Barre de titre sombre + lignes en aplat. Contour de la couleur
+   du fond. Ligne survolee : gris clair de la charte. */
+/* Le fond vert acide EST le contour : le menu a une marge
+   interieure de --pop-gap, et chaque bande (titre, ligne de
+   slider) est posee dessus en laissant ce meme jeu apparent. */
+.bs-popup {
+  --pop-gap: 3px;
+  position: absolute;
+  z-index: 60;
+  min-width: 230px;
+  max-width: min(380px, 92vw);
+  background: var(--color-lime);
+  color: var(--color-dark);
+  padding: var(--pop-gap);
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  letter-spacing: 0.04em;
+}
+
+.bs-popup--media,
+.bs-popup--sub {
+  background: var(--color-orange);
+}
+
+.bs-popup__title {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 9px 12px;
+  margin-bottom: var(--pop-gap);
+  background: var(--color-bg);
+  color: var(--color-lime);
+  text-transform: lowercase;
+}
+.bs-popup--media > .bs-popup__title,
+.bs-popup--sub > .bs-popup__title {
+  color: var(--color-orange);
+}
+
+.bs-popup__body {
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-popup__item {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  padding: 9px 12px;
+  cursor: pointer;
+  text-transform: lowercase;
+}
+/* Le nom s'affiche dans sa propre fonte, donc sa largeur est
+   imprevisible : ce qui depasse est coupe, et le survol fait
+   defiler le nom entier au lieu de l'elargir. */
+.bs-popup__label {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 1.15em;
+  line-height: 1.1;
+}
+
+.bs-popup__label > span {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+/* --shift : de combien le nom depasse, mesure en JS */
+.bs-popup__item:hover .bs-popup__label > span,
+.bs-popup__item:focus-visible .bs-popup__label > span {
+  animation: bs-marquee var(--marquee-t, 3s) linear infinite alternate;
+}
+
+@keyframes bs-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(var(--shift, 0px)); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bs-popup__item:hover .bs-popup__label > span { animation: none; }
+}
+
+.bs-popup__item:hover,
+.bs-popup__item:focus-visible {
+  background: var(--color-text);
+  color: var(--color-dark);
+  outline: none;
+}
+.bs-popup__item.is-selected {
+  background: var(--color-text);
+  color: var(--color-dark);
+}
+.bs-popup--color .bs-popup__item.is-selected {
+  background: var(--color-orange);
+}
+.bs-popup__item[disabled] {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ---- selecteur de couleur maison ---- */
+.cp__sliders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pop-gap);
+  margin-bottom: var(--pop-gap);
+}
+/* chaque slider a sa propre bande grise, separee par le vert */
+.cp__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  --sl-h: 34px;
+  height: 34px;
+  padding: 0 12px;
+  background: var(--color-text);
+  color: var(--color-dark);
+}
+.cp__formats {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pop-gap);
+}
+.cp__fmt-val {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------------- EDITEUR ----------------
+   Zone modulaire : panneau + apercu cote a cote quand la place
+   le permet, empiles sinon (flex-wrap, aucune regle par span). */
+/* Grille CSS (pas flex-wrap) : les deux colonnes sont BORNEES par
+   la hauteur du module, donc l'apercu defile au lieu de pousser. */
+.zone__body.grid-cell__editor {
+  display: grid;
+  grid-template-columns: minmax(0, 215px) minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: var(--space-2);
+  min-height: 0;
+}
+@container (max-width: 430px) {
+  .zone__body.grid-cell__editor {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+}
+
+.editor__panel {
+  min-width: 0;
+  min-height: 0;
+  /* on defile vers le bas si les reglages depassent, jamais sur le
+     cote : un defilement horizontal ici ne sert a rien */
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-orange) transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: var(--text-meta);
+  letter-spacing: 0.04em;
+  color: var(--color-lime);
+}
+
+/* Un reglage = libelle pointille + selecteur.
+   min-width:0 obligatoire : la ligne de points est un texte long,
+   sans ca le reglage refuse de retrecir et deborde. */
+.ctl {
+  min-width: 0;
+}
+
+/* libelle pointille du reglage */
+.ctl__head {
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  padding-bottom: 3px;
+}
+
+/* selecteur : fond de la charte, filet fin pour qu'il se detache
+   du fond de page (meme valeur, sinon il disparaitrait) */
+.ctl__box {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  --sl-h: 32px;
+  height: 32px;
+  padding: 0 7px;
+  border: 1px solid var(--color-line);
+  background: var(--ctl-fill, var(--color-field));
+  color: var(--ctl-ink, var(--color-text));
+  overflow: hidden;
+  transition: background 0.1s ease;
+}
+.ctl__box.is-clickable {
+  cursor: pointer;
+}
+/* survol d'un reglage : la cellule passe en vert acide */
+.ctl__box:hover,
+.ctl__box:focus-within,
+.ctl__box.is-open {
+  background: var(--color-lime);
+  color: var(--color-dark);
+}
+.ctl__box.is-clickable:focus-visible {
+  outline: 1px solid var(--color-orange);
+  outline-offset: 1px;
+}
+
+.ctl__text {
+  flex: none;
+  white-space: nowrap;
+  text-transform: lowercase;
+}
+.ctl__box .ctl__text:first-child {
+  text-transform: none;
+}
+
+/* ---- slider : valeur + points + rectangle orange ---- */
+.bs-slider {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+  width: 100%;
+}
+.bs-slider__label,
+.bs-slider__value {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+/* l'input couvre la boite : piste invisible, seul le thumb se voit */
+.bs-slider__input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+/* Le curseur doit etre CENTRE sur la piste : WebKit aligne le
+   pouce en haut de la piste, on le redescend avec margin-top.
+   --sl-h = hauteur de la boite qui contient le slider. */
+.slider {
+  /* la barre fait 0.9 de la hauteur de la cellule */
+  --sl-thumb: calc(var(--sl-h, 32px) * 0.9);
+}
+.slider::-webkit-slider-runnable-track {
+  height: var(--sl-h, 32px);
+  background: none;
+}
+.slider::-moz-range-track { height: 100%; background: none; }
+.slider::-moz-range-progress { background: none; }
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 4px;
+  height: var(--sl-thumb, 17px);
+  margin-top: calc((var(--sl-h, 32px) - var(--sl-thumb, 17px)) / 2);
+  border: none;
+  border-radius: 0;
+  background: var(--color-orange);
+}
+.slider::-moz-range-thumb {
+  width: 4px;
+  height: var(--sl-thumb, 17px);
+  border: none;
+  border-radius: 0;
+  background: var(--color-orange);
+}
+.slider:focus { outline: none; }
+.slider:hover, .slider:focus { --sl-thumb: var(--sl-h, 32px); }
+
+/* ---- alignement : 3 boutons dessines en filets ---- */
+.editor__align {
+  display: flex;
+  align-items: stretch;   /* random a la meme hauteur que les icones */
+  flex-wrap: wrap;        /* jamais de bouton rogne */
+  gap: 5px;
+  margin-top: 2px;
+}
+/* Interrupteur de justification : UN carre, trois positions.
+   La position du pave orange dit l'alignement — a gauche, au
+   milieu, a droite. Meme dessin que les autres boutons : contour
+   fin, pas d'aplat, sauf la position choisie. */
+.editor__justify {
+  flex: none;
+  display: flex;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-line);
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.editor__justify:hover {
+  color: var(--color-lime);
+  border-color: var(--color-lime);
+}
+
+/* les trois tiers ne sont PAS cliquables separement : le bouton
+   entier est la zone de clic, et chaque clic avance d'un cran */
+.editor__justify-seg {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 2px;
+  pointer-events: none;
+}
+
+.editor__justify-seg i {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: currentColor;
+}
+
+/* la ligne du milieu est plus courte, et se cale du bon cote :
+   l'icone reste lisible a 10 px de large */
+.editor__justify-seg i:nth-child(2) { width: 60%; }
+.editor__justify-seg[data-align="center"] i:nth-child(2) { margin: 0 auto; }
+.editor__justify-seg[data-align="right"] i:nth-child(2) { margin-left: auto; }
+
+.editor__justify-seg.is-active {
+  background: var(--color-orange);
+  color: var(--color-dark);
+}
+
+/* ---- apercu editable ----
+   Hauteur imposee par la zone : le texte ne fait JAMAIS grandir
+   le module, il defile. */
+/* position:relative : le curseur maison se place dedans */
+.editor__prev-wrap {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  overflow: hidden;
+}
+.editor__preview {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  padding: clamp(12px, 1.8vw, 22px);
+  outline: none;
+  cursor: text;
+  overflow: auto;
+  font-size: var(--ed-size, 40px);
+  line-height: var(--ed-lh, 1.3);
+  letter-spacing: var(--ed-ls, 0);
+  overflow-wrap: break-word;
+  word-break: break-word;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-orange) transparent;
+}
+.editor__preview::-webkit-scrollbar { width: 9px; }
+.editor__preview::-webkit-scrollbar-track {
+  background: repeating-linear-gradient(180deg, currentColor 0 6px, transparent 6px 10px) center top / 1px 100% no-repeat;
+  opacity: 0.4;
+}
+.editor__preview::-webkit-scrollbar-thumb {
+  background: var(--color-orange);
+  border-left: 3px solid transparent;
+  border-right: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* Curseur : on masque celui du systeme et on dessine le notre
+   exactement a sa place (calcul dans editor-module.js). */
+.editor__preview {
+  caret-color: transparent;
+}
+
+.editor__caret {
+  position: absolute;
+  pointer-events: none;
+  background: currentColor;
+  animation: bs-blink 1.05s steps(1, end) infinite;
+}
+@keyframes bs-blink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editor__caret { animation: none; }
+}
+
+/* ---- textes d'essai : 1 un mot, 2 une ligne, 3 un paragraphe ---- */
+.editor__sample {
+  flex: none;
+  width: 32px;
+  height: 32px;
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  line-height: 1;
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-line);
+  cursor: pointer;
+}
+
+.editor__sample:hover {
+  background: var(--color-lime);
+  border-color: var(--color-lime);
+  color: var(--color-dark);
+}
+
+/* ---- bouton random : a droite des alignements, meme hauteur ---- */
+/* Le mot est CENTRE et le bouton prend la place qui reste : il
+   n'est plus rogne par le bord de la zone de texte. */
+.editor__random {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 8px;
+  overflow: hidden;
+  text-align: center;
+  font-family: var(--font-ui);
+  font-size: var(--text-meta);
+  line-height: 1;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--color-orange);
+  color: var(--color-dark);
+  border: 0;
+  cursor: pointer;
+}
+
+.editor__random:hover {
+  background: var(--color-lime);
+}

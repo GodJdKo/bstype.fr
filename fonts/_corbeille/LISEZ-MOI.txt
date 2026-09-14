@@ -1,0 +1,6 @@
+Dossiers des fontes retirees de assets/fonts/.
+
+Rien n'a ete detruit : les medias et les travaux "in use" de la
+fonte sont ici, intacts. Remets le fichier de police dans
+assets/fonts/ et relance la mise a jour pour retrouver la page,
+ou supprime ce dossier toi-meme si tu n'en veux plus.

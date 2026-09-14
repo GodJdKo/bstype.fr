@@ -1,0 +1,58 @@
+/* ============================================================
+   TOKENS.CSS — DESIGN TOKENS (variables globales)
+   ------------------------------------------------------------
+   TOUTES les couleurs, tailles et espacements du site sont ici.
+   Changer une valeur ici la change partout.
+   ============================================================ */
+
+:root {
+  /* ---- Couleurs (celles de la maquette) ---- */
+  --color-bg: #191919;        /* fond noir profond */
+  --color-text: #d9d9d9;      /* gris clair (texte) */
+  --color-lime: #9dff00;      /* vert chartreuse (logo, titre) */
+  --color-orange: #ff5100;    /* orange (pastilles, fonts in use) */
+  --color-dark: #191919;      /* texte sombre sur fonds clairs */
+  --color-line: rgba(217, 217, 217, 0.85); /* filets fins */
+  --color-field: #191919;     /* fond des sliders et des selecteurs */
+
+  /* Zones selectionnables (dropdowns typo/graisse, cases actives) :
+     fond vert acide de la charte, en aplat leger. */
+  --color-select-bg: rgba(157, 255, 0, 0.14);
+  --color-select-bg-strong: rgba(157, 255, 0, 0.28);
+  --color-select-border: var(--color-lime);
+
+  /* ---- Typographies (familles définies dans fonts.css) ---- */
+  --font-ui: "BS Mono", "Courier New", monospace; /* typo de construction */
+
+  /* ---- Tailles de texte ---- */
+  --text-nav: 0.8rem;                      /* navigation */
+  --text-meta: 0.75rem;                    /* lignes de métadonnées */
+  --text-pill: clamp(0.9rem, 1.6vw, 1.35rem);  /* pastilles orange */
+  --text-subtitle: clamp(1rem, 2.1vw, 1.8rem); /* sous-titre hero */
+  --text-hero: clamp(4rem, 16vw, 15rem);       /* titre BS.type */
+  --text-demo: clamp(2.5rem, 8.5vw, 6.5rem);   /* démos de fontes (taille de base, x le slider) */
+  --text-section: clamp(3rem, 8vw, 7rem);      /* titre FONTS IN USE */
+  --text-footer: clamp(3.5rem, 11vw, 10rem);   /* BS.type du footer */
+
+  /* ---- Espacements ---- */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 32px;
+  --space-4: 64px;
+  --space-5: 128px;
+
+  /* ---- Divers ---- */
+  --radius-pill: 0;       /* formes rectangulaires (pas de pilule) */
+  --page-margin: clamp(16px, 2.2vw, 32px); /* marge latérale du site */
+
+  /* Largeur de la vignette vidéo en bas à droite. Tout ce qui doit
+     lui laisser de la place s'y réfère (bulle « à propos »,
+     pastilles de l'accueil) : une seule valeur à changer.
+     vmin = le plus petit côté de la fenêtre, donc la vignette reste
+     lisible en format vertical. */
+  /* Agrandie d'un facteur 1,7 par rapport a l'ancienne taille
+     (120 / 17vmin / 210). Le disque orange, la zone cliquable et la
+     place de la bulle « a propos » se calent tous sur cette seule
+     valeur : la changer suffit. */
+  --face-w: clamp(204px, 28.9vmin, 357px);
+}

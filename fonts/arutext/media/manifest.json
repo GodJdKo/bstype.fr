@@ -1,0 +1,21 @@
+[
+  {
+    "file": "POST3.jpg",
+    "kind": "image",
+    "w": 1081,
+    "h": 1350
+  },
+  {
+    "file": "POST4.jpg",
+    "kind": "image",
+    "w": 1081,
+    "h": 1350
+  },
+  {
+    "file": "POST5.mp4",
+    "kind": "video",
+    "playback": "loop",
+    "w": 810,
+    "h": 1440
+  }
+]
