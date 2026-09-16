@@ -266,6 +266,50 @@ window.BSSnapshot = (function () {
     }
   }
 
+  /* ---------- les sliders ----------
+     Un <input type="range"> est dessine par le navigateur lui-meme,
+     et dans une image SVG il retombe sur son dessin par defaut : le
+     curseur ne tombe plus au meme endroit que sur la page. On le
+     remplace donc par un trait a la BONNE position, calculee depuis
+     la valeur — ce qui redonne exactement ce qu'on voit. */
+  function figerSliders(source, copie) {
+    const vrais = source.querySelectorAll('input[type="range"]');
+    const copies = copie.querySelectorAll('input[type="range"]');
+    for (let i = 0; i < vrais.length && i < copies.length; i += 1) {
+      const el = vrais[i];
+      const cl = copies[i];
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) { cl.remove(); continue; }
+
+      const mini = parseFloat(el.min || "0");
+      const maxi = parseFloat(el.max || "100");
+      const val = parseFloat(el.value);
+      const part = maxi > mini ? (val - mini) / (maxi - mini) : 0;
+
+      const style = getComputedStyle(el);
+      const orange = style.getPropertyValue("--color-orange").trim() || "#ff5100";
+      /* meme dessin que .slider::-webkit-slider-thumb : un rectangle
+         de 4 px, centre sur la piste */
+      const h = Math.max(4, Math.round(r.height * 0.9));
+      const x = Math.round(part * Math.max(0, r.width - 4));
+
+      const faux = document.createElement("span");
+      faux.setAttribute(
+        "style",
+        "position:absolute;left:0;top:0;width:" + Math.round(r.width) + "px;" +
+        "height:" + Math.round(r.height) + "px;pointer-events:none;"
+      );
+      const pouce = document.createElement("span");
+      pouce.setAttribute(
+        "style",
+        "position:absolute;left:" + x + "px;top:" + Math.round((r.height - h) / 2) + "px;" +
+        "width:4px;height:" + h + "px;background:" + orange + ";"
+      );
+      faux.appendChild(pouce);
+      cl.parentNode.replaceChild(faux, cl);
+    }
+  }
+
   /* Les commentaires du HTML doivent partir : l'image SVG est lue
      en XML strict, et un simple « -- » dans un commentaire (on en
      ecrit tout le temps) fait echouer TOUTE la lecture. */
@@ -292,6 +336,7 @@ window.BSSnapshot = (function () {
       const copie = document.documentElement.cloneNode(true);
       figerImages(document.documentElement, copie);
       remplacerMedias(document.documentElement, copie);
+      figerSliders(document.documentElement, copie);
 
       copie.querySelectorAll('script, link[rel="stylesheet"], style').forEach((n) => n.remove());
       /* on ne se photographie pas soi-meme : la toile de l'effet et

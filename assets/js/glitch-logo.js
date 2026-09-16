@@ -153,6 +153,7 @@
   let posSurveillee = -1;
   let fondu = 0;            /* 0 = pas de fondu ; sinon, ce qu'il reste */
   let fonduTotal = 0;
+  let aLaMain = false;      /* on pousse le film nous-memes ? */
 
   /* Dimensions prises sur LA TOILE ELLE-MEME des qu'elle est posee.
      Sur telephone, la hauteur de la fenetre ne vaut pas la hauteur
@@ -327,6 +328,7 @@
     video.pause();
     ouverture = false;
     fondu = 0;
+    aLaMain = false;
     posSurveillee = -1;
     hote.style.opacity = "";
     hote.classList.remove("is-ouverture");
@@ -358,7 +360,24 @@
     dernierDessin = maintenant;
 
     if (sens > 0) {
-      dessiner(false);
+      /* Le film avance-t-il vraiment ? Sur telephone la lecture est
+         parfois refusee en silence (economie d'energie, onglet juge
+         invisible) : l'image restait figee sur la premiere et ne
+         partait jamais. On repasse alors en AVANCE MANUELLE : on
+         pousse currentTime nous-memes, image par image. */
+      if (posSurveillee < 0 || video.currentTime > posSurveillee + 0.001) {
+        posSurveillee = video.currentTime;
+        derniereAvancee = maintenant;
+      } else if (maintenant - derniereAvancee > BLOCAGE) {
+        aLaMain = true;
+      }
+      if (aLaMain) {
+        const pas = Math.max(1, Math.round(CADENCE_FILM / CADENCE)) / CADENCE_FILM;
+        const t = video.currentTime + pas;
+        if (t < fin()) { try { video.currentTime = t; } catch (_e) {} }
+        posSurveillee = video.currentTime;
+      }
+      dessiner(aLaMain);
       /* Arrive au bout : on se fige tant qu'on ne fait rien. La
          derniere image reste dessinee sur la toile. */
       if (video.currentTime >= fin()) { video.pause(); sens = 0; return; }
@@ -421,6 +440,7 @@
   function jouer() {
     if (!pret) return false;
     fondu = 0;
+    aLaMain = false;
     hote.style.opacity = "";
     /* Si le film etait reste sur sa derniere image — apres
        l'ouverture du site, ou apres un arret force — on repart du

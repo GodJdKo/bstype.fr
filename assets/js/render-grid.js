@@ -186,8 +186,17 @@
     name.textContent = font.name;
     inner.appendChild(name);
     String(font.category || "").split(",").map((s) => s.trim()).filter(Boolean)
-      .concat([font.designer, font.year].filter(Boolean))
       .forEach((t) => inner.appendChild(document.createTextNode("  ·  " + t)));
+    /* L'auteur et l'annee dans leur propre morceau : sur telephone la
+       ligne est coupee juste avant, plutot que de passer a deux
+       lignes (voir .specimen__meta-qui dans specimen.css). */
+    const qui = [font.designer, font.year].filter(Boolean);
+    if (qui.length) {
+      const bout = document.createElement("span");
+      bout.className = "specimen__meta-qui";
+      bout.textContent = qui.map((t) => "  ·  " + t).join("");
+      inner.appendChild(bout);
+    }
     bar.appendChild(inner);
     return bar;
   }

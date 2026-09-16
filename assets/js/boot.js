@@ -129,8 +129,14 @@
         const s = c[1] - Math.max(c[0], c[2]);
         if (s > score) { score = s; meilleur = c; }
       });
-      return score > 20 ? meilleur : [0, 177, 64];
+      /* Aucun coin vert : l'image n'est pas encore decodee — c'est
+         courant sur telephone, la premiere arrive noire. On ne
+         retient RIEN et on redemande a la suivante, sinon on fige un
+         faux vert et le fond reste visible derriere la tete. */
+      return score > 20 ? meilleur : null;
     }
+    const ESSAIS_FOND = 40;
+    let essaisFond = 0;
 
     function composer() {
       if (video.readyState < 2 || !video.videoWidth) return;
@@ -143,7 +149,12 @@
       let img;
       try { img = ctx.getImageData(0, 0, TAILLE, TAILLE); } catch (_e) { return; }
       const d = img.data;
-      if (!fond) fond = relever(d);
+      if (!fond) {
+        fond = relever(d);
+        essaisFond += 1;
+        if (!fond && essaisFond >= ESSAIS_FOND) fond = [0, 177, 64];
+        if (!fond) return;          /* on retente a l'image suivante */
+      }
       const kr = fond[0], kg = fond[1], kb = fond[2];
       for (let i = 0; i < d.length; i += 4) {
         const dr = d[i] - kr, dg = d[i + 1] - kg, db = d[i + 2] - kb;

@@ -89,8 +89,11 @@ window.BSI18n = (function () {
     "ed.size":              { fr: "corps",               en: "font size" },
     "ed.lineHeight":        { fr: "interligne",          en: "line height" },
     "ed.letterSpacing":     { fr: "approche",            en: "letter spacing" },
-    "ed.color":             { fr: "couleur du texte",    en: "font color" },
-    "ed.bg":                { fr: "couleur du fond",     en: "background color" },
+    /* Ces deux libelles tiennent sur UNE ligne, meme dans une case
+       etroite de telephone : deux lignes decaleraient la boite du
+       reglage et casseraient l'alignement des voisins. */
+    "ed.color":             { fr: "texte",               en: "text" },
+    "ed.bg":                { fr: "fond",                en: "back" },
     "ed.random":            { fr: "hasard",              en: "random" },
     "ed.align":             { fr: "Aligner",             en: "Align" },
     "ed.sample":            { fr: "Ecrire ici.",         en: "Type something here." },

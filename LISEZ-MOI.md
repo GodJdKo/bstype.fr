@@ -529,6 +529,21 @@ Le jeu de caractères fait l'inverse : **moins haut** (0,85), et son
 aperçu prend **la moitié** du module au lieu de 45 %, le glyphe
 occupant 82 % de cette moitié au lieu de 62 %.
 
+**Les pastilles de l'accueil** restent **dispersées et dérivantes**
+sur téléphone. Les mettre en flux normal les rangeait en colonne, ce
+qui n'est plus la page d'accueil du site : `placePills` tient déjà
+compte de la largeur et retombe tout seul sur une ou deux colonnes
+de cases, en tirant une position au hasard dans chaque case.
+
+**La barre orange** d'une page de fonte tient sur **une seule
+ligne** : sur téléphone elle est coupée juste avant le nom de
+l'auteur (`.specimen__meta-qui`), plutôt que de passer à deux lignes.
+
+**Les libellés des réglages** tiennent eux aussi sur une ligne — un
+libellé qui passe à deux décale sa boîte et les réglages voisins ne
+sont plus alignés. « couleur du texte » et « couleur du fond » sont
+devenus « texte » et « fond ».
+
 **Les cibles au doigt.** Mesuré à 320 px : le chevron d'un module
 faisait 11 × 12 pixels, les liens du haut 20 pixels de haut, la
 pastille de couleur 16 de large, les cases de glyphes 28. Apple
@@ -551,6 +566,23 @@ là, et une zone trop large gênerait.
 > pendant 400 ms, on abandonne le retour image par image et on
 > **fond** — même durée, même effet à l'œil, et ça ne se coince
 > jamais.
+
+> **Une zone tactile ne se pose JAMAIS sur un élément qui contient
+> un champ natif.** La boîte d'un slider est un `<span>` avec un
+> `<input type="range">` dedans : la zone invisible ajoutée pour le
+> doigt se posait par-dessus l'input et avalait le geste — les
+> curseurs ne bougeaient plus du tout. Elle n'est ajoutée qu'aux
+> boutons et à la pastille de couleur, qui n'ont rien dedans.
+
+> **`touch-action: none` sur les sliders.** Sans ça le navigateur
+> prend le glissement pour un défilement du panneau de réglages, et
+> le curseur ne suit pas le doigt.
+
+> **Un `<input type="range">` ne se photographie pas.** Il est
+> dessiné par le navigateur lui-même, et dans l'image SVG il retombe
+> sur son dessin par défaut : le curseur ne tombait plus au même
+> endroit quand l'effet démarrait. Il est remplacé dans la photo par
+> un trait posé à la bonne position, calculée depuis la valeur.
 
 > **Le fond vert de la vignette** n'était pas toujours détouré : la
 > couleur du fond est relevée sur la première image décodée, et sur

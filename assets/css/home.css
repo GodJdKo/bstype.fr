@@ -622,23 +622,12 @@
 /* ---------------- RESPONSIVE ---------------- */
 
 @media (max-width: 720px) {
-  /* Les pastilles passent en flux normal, plus lisible en mobile */
-  .pills {
-    position: static;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-1);
-    padding-top: var(--space-3);
-    margin-bottom: auto;
-  }
-
-  .pill {
-    position: static;
-    /* en flux normal la derive ferait se chevaucher les pastilles :
-       on la coupe, la mise en page suffit */
-    animation: none;
-  }
-
+  /* Les pastilles restent DISPERSEES et derivent, comme sur grand
+     ecran. Les mettre en flux normal les rangeait en colonne, ce qui
+     n'est plus la page d'accueil du site. placePills (render-home.js)
+     tient compte de la largeur : sur un telephone il retombe tout
+     seul sur une ou deux colonnes de cases, et tire une position au
+     hasard DANS chaque case. */
   .hero {
     justify-content: flex-end;
   }

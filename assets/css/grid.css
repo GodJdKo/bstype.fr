@@ -338,8 +338,25 @@
 }
 
 /* module etroit : le menu passe sous la bascule */
-@container (max-width: 340px) {
-  .cs__tools { flex-wrap: wrap; }
+/* MODULE ETROIT : les deux boutons l'un SOUS l'autre, centres dans
+   la largeur claire de l'apercu. Cote a cote, le selecteur de style
+   sortait de l'apercu et disparaissait. */
+@container (max-width: 430px) {
+  .cs__tools {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .cs__toggle,
+  .cs__pick {
+    width: min(100%, 230px);
+    justify-content: center;
+    text-align: center;
+  }
+  /* la ligne de points ne sert a rien dans un bouton centre */
+  .cs__pick .dots {
+    display: none;
+  }
 }
 
 .cs__toggle:hover {

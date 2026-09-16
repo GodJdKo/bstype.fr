@@ -46,9 +46,26 @@
   flex: 1;
   border-top: 1px solid var(--color-orange);
 }
+.specimen__meta-in {
+  /* UNE ligne, toujours : la barre est un filet, pas un paragraphe */
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
 .specimen__meta-name {
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Sur telephone la ligne est coupee AVANT le nom de l'auteur : il
+   reste le nom de la fonte et son genre, ce qui tient sans deborder. */
+@media (max-width: 720px) {
+  .specimen__meta-qui {
+    display: none;
+  }
 }
 
 .specimen-foot {
@@ -297,6 +314,16 @@
   }
 }
 
+/* Dans un module etroit, le texte d'essai garde un corps LISIBLE :
+   c'est la fonte qu'on vient regarder. --ed-size est pose en JS par
+   le reglage « corps » ; on ne descend pas en dessous de 34 px. */
+@container (max-width: 430px) {
+  .editor__preview {
+    font-size: max(34px, var(--ed-size, 40px));
+    padding: clamp(8px, 2.5cqw, 16px);
+  }
+}
+
 .editor__panel {
   min-width: 0;
   min-height: 0;
@@ -321,11 +348,16 @@
   min-width: 0;
 }
 
-/* libelle pointille du reglage */
+/* libelle pointille du reglage.
+   UNE SEULE LIGNE, toujours : un libelle qui passe a deux lignes
+   decale sa boite vers le bas, et les reglages voisins ne sont plus
+   alignes entre eux. Ce qui ne tient pas est coupe. */
 .ctl__head {
   min-width: 0;
   display: flex;
   align-items: baseline;
+  white-space: nowrap;
+  overflow: hidden;
   gap: 5px;
   padding-bottom: 3px;
 }
@@ -391,6 +423,11 @@
   width: 100%;
   height: 100%;
   margin: 0;
+  /* AU DOIGT : sans ça le navigateur prend le glissement pour un
+     defilement de la page — le panneau de reglages defile
+     verticalement — et le curseur ne bouge jamais. touch-action:
+     none dit « cet element gere ses propres gestes ». */
+  touch-action: none;
 }
 /* Le curseur doit etre CENTRE sur la piste : WebKit aligne le
    pouce en haut de la piste, on le redescend avec margin-top.

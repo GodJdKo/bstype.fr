@@ -64,6 +64,16 @@
     photo.alt = "";
     photo.loading = "lazy";
     photo.setAttribute("aria-hidden", "true");
+    /* La photo prend toute la hauteur du pied ; pour que sa LARGEUR
+       suive, il lui faut ses proportions — la grille ne sait pas les
+       deviner avant d'avoir la hauteur, et la boite se retrouvait
+       etroite avec l'image perdue au milieu. On les releve sur
+       l'image chargee : n'importe quelle photo marche. */
+    photo.addEventListener("load", () => {
+      if (photo.naturalWidth && photo.naturalHeight) {
+        photo.style.aspectRatio = photo.naturalWidth + " / " + photo.naturalHeight;
+      }
+    });
 
     pied.append(texte, photo);
     document.body.appendChild(pied);

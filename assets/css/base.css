@@ -201,16 +201,23 @@ html.bs-charge body {
   overflow: hidden;
   background: var(--color-text);
   color: var(--color-dark);
-  min-height: min(62vh, 620px);
-  padding: var(--space-4) var(--page-margin);
-  display: flex;
-  flex-direction: column;
+  display: block;
+  /* hauteur minimum : de quoi voir le pied en entier meme quand le
+     texte est court */
+  min-height: clamp(280px, 40vh, 460px);
+  /* La hauteur du pied, c'est celle de la PHOTO : elle touche le
+     haut du fond clair et le bas de la page. Plus de bande vide. */
+  min-height: 0;
+  /* aucune marge en haut : c'est la photo qui touche le haut du
+     fond clair. Le texte porte sa propre marge. */
+  padding: 0 var(--page-margin);
   isolation: isolate;
 }
 
 .bs-pied__texte {
   position: relative;
   z-index: 2;
+  padding: var(--space-3) 0 var(--space-3);
   display: flex;
   flex-direction: column;
   flex: 1;
@@ -253,14 +260,23 @@ html.bs-charge body {
 /* La photo est calee sur le bas du cadre et debordE a droite :
    c'est le pied qui sort du pied de page. « contain » garde ses
    proportions, jamais d'ecrasement. */
+/* La photo n'est PLUS posee par-dessus : c'est elle qui donne sa
+   hauteur au pied de page. Elle est dans le flux, calee a droite,
+   et son haut touche le haut du fond clair comme son bas touche le
+   bas de la page. */
+/* La photo est POSEE sur toute la hauteur du pied : son haut touche
+   le haut du fond clair, son bas le bas de la page. Elle est hors du
+   flux, donc c'est le texte qui donne sa hauteur au pied — et la
+   photo s'y adapte, largeur calculee d'apres ses proportions.
+   Le texte, lui, est borne a 56 % de la largeur : les deux ne se
+   recouvrent jamais. */
 .bs-pied__photo {
   position: absolute;
-  /* calee sur le bord du fond clair, pas au-dela : le pied REJOINT
-     le cadre au lieu d'en sortir */
-  right: 0;
+  top: 0;
   bottom: 0;
+  right: 0;
   z-index: 1;
-  /* toute la hauteur du fond clair, du bas jusqu'en haut */
+  display: block;
   height: 100%;
   width: auto;
   max-width: 42%;
@@ -271,25 +287,30 @@ html.bs-charge body {
 
 /* Format etroit : plus de superposition du tout. Le texte occupe
    toute la largeur, la photo se range EN DESSOUS, calee a droite. */
+/* Format etroit : le texte prend toute la largeur, la photo se range
+   dessous, calee a droite. */
+/* Format etroit : le texte prend toute la largeur, la photo se range
+   dessous, calee a droite, dans le flux — aucun recouvrement. */
 @media (max-width: 720px) {
   .bs-pied {
+    display: flex;
+    flex-direction: column;
     min-height: 0;
-    padding-bottom: 0;
   }
   .bs-pied__texte {
     max-width: 100%;
   }
   .bs-pied__fonde {
-    padding-top: clamp(18px, 6vw, 40px);
+    padding-top: clamp(14px, 5vw, 32px);
   }
   .bs-pied__photo {
     position: relative;
-    right: auto;
+    top: auto;
     bottom: auto;
+    right: auto;
     align-self: flex-end;
-    height: clamp(150px, 38vw, 280px);
-    max-width: 70%;
-    margin-top: clamp(10px, 3vw, 24px);
+    height: clamp(170px, 42vw, 300px);
+    max-width: 72%;
   }
 }
 
@@ -548,7 +569,8 @@ html.bs-charge body {
    ============================================================ */
 .bs-face {
   position: fixed;
-  right: var(--page-margin);
+  /* legerement plus a droite que la marge du site */
+  right: calc(var(--page-margin) - clamp(6px, 1.4vw, 22px));
   bottom: var(--page-margin);
   width: var(--face-w);
   z-index: 40;
@@ -798,11 +820,17 @@ html.bs-charge body {
    precision est la et une zone trop large gênerait.
    ============================================================ */
 @media (pointer: coarse) {
+  /* PIEGE A NE PLUS REFAIRE : jamais sur un element qui CONTIENT un
+     champ natif. La boite d'un slider est un <span> avec un
+     <input type="range"> dedans : la zone invisible se posait
+     par-dessus l'input et avalait le doigt — les curseurs ne
+     bougeaient plus du tout. On ne l'ajoute qu'aux boutons, et a la
+     pastille de couleur, qui n'ont rien dedans. */
   .nav__brand,
   .nav__fonts,
   .nav__lang-btn,
   .zone__chev,
-  .ctl__box,
+  .ctl__box.is-clickable:not(.bs-slider),
   .cs__toggle,
   .cs__pick,
   .editor__rail-btn {
@@ -813,7 +841,7 @@ html.bs-charge body {
   .nav__fonts::after,
   .nav__lang-btn::after,
   .zone__chev::after,
-  .ctl__box::after,
+  .ctl__box.is-clickable:not(.bs-slider)::after,
   .cs__toggle::after,
   .cs__pick::after,
   .editor__rail-btn::after {
