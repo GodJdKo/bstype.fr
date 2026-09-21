@@ -21,8 +21,10 @@
    sont bloques, et l'effet de dereglement ne demarre pas.
 
    REGLAGES, en haut du fichier :
-     MINIMUM   temps d'affichage minimum de l'ecran noir (ms)
-     MAXIMUM   au-dela, on ouvre meme si quelque chose traine (ms)
+     MINIMUM      temps d'affichage minimum de l'ecran noir (ms)
+     MAXIMUM      au-dela, on ouvre meme si quelque chose traine (ms)
+     ATTENTE_FILM le film du logo a ce temps-la pour etre pret ;
+                  passe ce delai on ouvre sans lui (ms)
      TOUR      duree d'un tour de la vignette (ms)
      TAILLE    cote de la vignette, en pixels
 
@@ -34,6 +36,10 @@
 
   const MINIMUM = 900;
   const MAXIMUM = 9000;
+  /* Le film du logo a DEUX SECONDES pour etre pret. Au-dela on
+     ouvre sans lui : mieux vaut entrer sur le site tout de suite que
+     regarder un ecran noir en attendant une video. */
+  const ATTENTE_FILM = 2000;
   const TOUR = 5200;
   const TAILLE = 190;
 
@@ -210,15 +216,17 @@
 
   /* Sur l'accueil seulement : le film doit etre decode pour pouvoir
      montrer sa derniere image. */
+  let filmPret = false;
   const film = accueil ? attendre((ok) => {
     const voir = () => {
       if (!window.BSLogoGlitch || !window.BSLogoGlitch.pret) return false;
+      filmPret = true;
       window.BSLogoGlitch.figer();        /* le logo entier, fige */
       return true;
     };
     if (voir()) { ok(); return; }
-    const t = setInterval(() => { if (voir()) { clearInterval(t); ok(); } }, 120);
-    setTimeout(() => { clearInterval(t); ok(); }, 7000);
+    const t = setInterval(() => { if (voir()) { clearInterval(t); ok(); } }, 80);
+    setTimeout(() => { clearInterval(t); ok(); }, ATTENTE_FILM);
   }) : Promise.resolve();
 
   const minimum = new Promise((ok) => setTimeout(ok, MINIMUM));
@@ -232,7 +240,9 @@
     /* Sur l'accueil, le logo pose son PROPRE voile noir avant que le
        notre parte : les deux se recouvrent, donc aucun eclair de
        page nue. */
-    const passe = accueil && window.BSLogoGlitch && window.BSLogoGlitch.ouvrir
+    /* On ne joue l'ouverture que si le film est arrive a temps.
+       Sinon on entre directement : le fond noir s'efface, point. */
+    const passe = accueil && filmPret && window.BSLogoGlitch && window.BSLogoGlitch.ouvrir
       ? window.BSLogoGlitch.ouvrir() : false;
 
     if (bat) { clearTimeout(bat); bat = 0; }

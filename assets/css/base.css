@@ -289,28 +289,27 @@ html.bs-charge body {
    toute la largeur, la photo se range EN DESSOUS, calee a droite. */
 /* Format etroit : le texte prend toute la largeur, la photo se range
    dessous, calee a droite. */
-/* Format etroit : le texte prend toute la largeur, la photo se range
-   dessous, calee a droite, dans le flux — aucun recouvrement. */
+/* Format etroit : MEME dessin que sur grand ecran — le texte a
+   gauche, le pied a droite sur toute la hauteur. Les empiler
+   allongeait le bas de page pour rien. Seules les proportions
+   changent : le texte cede un peu de largeur au pied. */
 @media (max-width: 720px) {
   .bs-pied {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
+    /* assez haut pour que le pied garde ses proportions : sa largeur
+       vaut 56 % de l'ecran, sa hauteur suit */
+    min-height: clamp(200px, 60vw, 360px);
   }
   .bs-pied__texte {
-    max-width: 100%;
+    max-width: 60%;
   }
   .bs-pied__fonde {
-    padding-top: clamp(14px, 5vw, 32px);
+    padding-top: clamp(14px, 6vw, 40px);
   }
+  /* Le pied peut mordre sur la colonne de texte : ce qui depasse a sa
+     gauche est TRANSPARENT, les mots restent lisibles. Sans ce
+     recouvrement il devenait une vignette au lieu d'un pied. */
   .bs-pied__photo {
-    position: relative;
-    top: auto;
-    bottom: auto;
-    right: auto;
-    align-self: flex-end;
-    height: clamp(170px, 42vw, 300px);
-    max-width: 72%;
+    max-width: 56%;
   }
 }
 

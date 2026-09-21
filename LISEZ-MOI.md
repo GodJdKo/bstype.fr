@@ -544,6 +544,24 @@ libellé qui passe à deux décale sa boîte et les réglages voisins ne
 sont plus alignés. « couleur du texte » et « couleur du fond » sont
 devenus « texte » et « fond ».
 
+**L'éditeur de l'accueil** suit le même modèle que celui d'une page
+de fonte : les réglages s'ouvrent **par le haut**, sur toute la
+largeur, trois par ligne — au lieu de sortir par la gauche en
+colonne étroite. Le module passe en colonne : réglages, rangée de
+boutons, zone de texte.
+
+> Deux pièges dans ce passage en colonne. La hauteur imposée est sur
+> `.bs-editor`, pas sur `.font-row` : c'est elle qu'il faut lever. Et
+> le panneau porte `height: 100%`, qui vaut **zéro** dès que le
+> module n'a plus de hauteur imposée — il lui faut `height: auto`.
+
+**Le bloc du titre remonte** sur téléphone, et la zone des pastilles
+se réduit d'autant : `placePills` mesure le haut du titre, il n'y a
+rien d'autre à régler. Le noir derrière le titre déborde maintenant
+de `-100vh` vers le bas et se fait couper par `overflow: hidden` —
+compter une hauteur exacte la rendait fausse au premier changement
+de marge.
+
 **Les cibles au doigt.** Mesuré à 320 px : le chevron d'un module
 faisait 11 × 12 pixels, les liens du haut 20 pixels de haut, la
 pastille de couleur 16 de large, les cases de glyphes 28. Apple
@@ -583,6 +601,14 @@ là, et une zone trop large gênerait.
 > sur son dessin par défaut : le curseur ne tombait plus au même
 > endroit quand l'effet démarrait. Il est remplacé dans la photo par
 > un trait posé à la bonne position, calculée depuis la valeur.
+
+> **La photo suit la fenêtre VISIBLE, pas la fenêtre de mise en
+> page.** Sur iPhone, quand la barre d'adresse est à moitié sortie,
+> les deux ne coïncident pas : la photo était dessinée quelques
+> dizaines de pixels trop haut, et le site avait l'air défilé plus
+> bas qu'il ne l'était. Le décalage vient de
+> `window.visualViewport.offsetTop`, ajouté au défilement. Sur
+> ordinateur il vaut zéro, rien ne change.
 
 > **Le fond vert de la vignette** n'était pas toujours détouré : la
 > couleur du fond est relevée sur la première image décodée, et sur
@@ -965,8 +991,25 @@ Les réglages sont en haut de `assets/js/glitch-logo.js` :
 | `MARGE_VERT` | de combien le vert doit dépasser le rouge et le bleu (6 sur 255) |
 | `PIXELS_MAX` | taille maximum de la toile, pour les très grands écrans |
 
-Le film n'est téléchargé qu'**après** le chargement de la page : il
-pèse 4 Mo, il ne doit pas se mettre en travers du site.
+Le film n'est téléchargé qu'**après** le chargement de la page, et
+il a **deux secondes** pour être prêt (`ATTENTE_FILM` dans
+`boot.js`). Passé ce délai on entre sur le site sans lui : mieux
+vaut une page qu'un écran noir.
+
+> **Le film est encodé TOUT EN IMAGES CLÉS** (`-g 1`). Reculer dans
+> une vidéo oblige le navigateur à repartir de la dernière image clé
+> et à redécoder jusqu'au point voulu ; sur téléphone il abandonnait,
+> et le logo se figeait au lieu de se défaire. Avec une image clé
+> partout, reculer ne coûte rien. La commande :
+>
+> ```bash
+> ffmpeg -i source.mp4 -c:v libx264 -profile:v main -pix_fmt yuv420p -crf 42 -g 1 -bf 0 -sc_threshold 0 -movflags +faststart -an BSGLITCH.mp4
+> ```
+>
+> `-crf 42` paraît brutal : le film ne sert que de **pochoir**, sa
+> couleur ne compte pas. Mesuré, le masque garde 7,48 % des pixels
+> contre 7,81 % à qualité maximale. Et le fichier ne pèse que
+> 2,9 Mo malgré les 359 images clés.
 
 > ⚠️ **Le fichier actuel est encodé en HEVC.** Safari le lit, Chrome
 > seulement là où la machine sait le décoder, Firefox souvent pas du

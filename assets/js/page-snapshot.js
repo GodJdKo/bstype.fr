@@ -329,8 +329,17 @@ window.BSSnapshot = (function () {
     const m = mesures || {};
     const largeur = Math.max(1, Math.round(m.largeur || document.documentElement.clientWidth));
     const hauteur = Math.max(1, Math.round(m.hauteur || document.documentElement.clientHeight));
-    const dx = window.scrollX;
-    const dy = window.scrollY;
+    /* De combien la page est-elle decalee sous ce qu'on voit ?
+       Le defilement, plus — SUR TELEPHONE — le decalage de la
+       fenetre visible par rapport a la fenetre de mise en page. Sur
+       iPhone, quand la barre d'adresse est a moitie sortie, les deux
+       ne coincident pas : la photo etait alors dessinee quelques
+       dizaines de pixels trop haut, et le site avait l'air defile
+       plus bas qu'il ne l'etait. Sur ordinateur ces valeurs sont
+       nulles, rien ne change. */
+    const vv = window.visualViewport;
+    const dx = window.scrollX + (vv ? vv.offsetLeft : 0);
+    const dy = window.scrollY + (vv ? vv.offsetTop : 0);
 
     return construireCssFontes().then((css) => {
       const copie = document.documentElement.cloneNode(true);

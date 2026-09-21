@@ -96,15 +96,18 @@
   z-index: 2;
 }
 
-/* la bande descend jusqu'au bas de la fenetre : plus aucun bout
-   de video ne reapparait sous le titre et le sous-titre */
+/* La bande descend jusqu'au bas de la zone : plus aucun bout de
+   video ne reapparait sous le titre et le sous-titre. Elle deborde
+   franchement vers le bas — .hero a overflow: hidden, donc elle est
+   coupee net — plutot que de compter une hauteur, qui se retrouvait
+   fausse des qu'on changeait la marge du bas. */
 .hero__title::before {
   content: "";
   position: absolute;
   left: calc(-1 * var(--page-margin));
   right: calc(-1 * var(--page-margin));
   top: 0;
-  bottom: calc(-1 * (var(--space-3) + 100%));
+  bottom: -100vh;
   background: var(--color-bg);
   z-index: -1;
 }
@@ -628,6 +631,179 @@
      tient compte de la largeur : sur un telephone il retombe tout
      seul sur une ou deux colonnes de cases, et tire une position au
      hasard DANS chaque case. */
+
+  /* Le bloc du titre REMONTE, et la zone des pastilles se reduit
+     d'autant : placePills mesure le haut du titre, donc il n'y a
+     rien d'autre a regler. */
+  .hero {
+    padding-bottom: clamp(34px, 11vh, 110px);
+  }
+
+  /* et le noir derriere le titre monte plus haut que lui */
+  .hero__title::before {
+    top: calc(-1 * clamp(16px, 4vh, 40px));
+  }
+
+  /* ---- L'EDITEUR DE L'ACCUEIL : le modele des pages de fonte ----
+     Les reglages sortaient par la GAUCHE, en colonne etroite. Ils
+     s'ouvrent maintenant PAR LE HAUT, sur toute la largeur, ranges
+     trois par ligne — comme dans le module editeur d'une page de
+     fonte.
+     Le module passe en COLONNE : reglages, puis rangee de boutons,
+     puis zone de texte. En ligne avec retour a la ligne, la seconde
+     ligne se retrouvait ecrasee a zero. */
+  .font-row .bs-editor {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+
+  .font-row .editor__panel {
+    order: -1;                 /* au-dessus de tout le reste */
+    width: 100%;
+    /* height: auto obligatoire : la regle de base pose height: 100%,
+       qui vaut ZERO des que le module n'a plus de hauteur imposee. */
+    height: auto;
+    max-height: 0;
+    flex: 0 0 auto;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, margin 0.3s ease;
+  }
+
+  .font-row .bs-editor.is-drawer-open .editor__panel {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-content: start;
+    gap: 7px 6px;
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+    margin: 0 0 var(--space-2);
+    overflow-y: auto;
+  }
+
+  .font-row .bs-editor.is-drawer-open .editor__panel .editor__align {
+    grid-column: 1 / -1;
+  }
+
+  .font-row .editor__panel .ctl .dots {
+    display: none;
+  }
+
+  /* la colonne de boutons devient une RANGEE, au-dessus du texte */
+  .font-row .editor__rail {
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+    height: auto;
+    margin: 0 0 var(--space-2);
+  }
+
+  .font-row .editor__drawer-toggle {
+    flex: 1 1 auto;
+    min-height: 34px;
+  }
+
+  .font-row .editor__rail-btn {
+    width: auto;
+    flex: 0 0 auto;
+    padding: 0 12px;
+  }
+
+  /* Les libelles sont a la verticale dans la colonne de gauche ;
+     dans une rangee ils se lisent normalement. */
+  .font-row .editor__rail-btn {
+    writing-mode: horizontal-tb;
+    text-orientation: mixed;
+    padding: 8px 14px;
+  }
+
+  /* les fleches de la poignee pointent vers le bas, cote a cote */
+  .font-row .editor__arrows {
+    flex-direction: row;
+  }
+
+  .font-row .editor__preview {
+    width: 100%;
+    height: auto;
+    flex: 1 1 auto;
+    min-height: clamp(130px, 20vh, 240px);
+    max-height: 48vh;
+    overflow: auto;
+  }
+
+  .hero {
+    padding-bottom: clamp(34px, 11vh, 110px);
+  }
+
+  /* et le noir derriere le titre monte plus haut que lui */
+  .hero__title::before {
+    top: calc(-1 * clamp(16px, 4vh, 40px));
+  }
+
+  /* ---- L'EDITEUR DE L'ACCUEIL : le modele des pages de fonte ----
+     Les reglages sortaient par la GAUCHE, en colonne etroite. Ils
+     s'ouvrent maintenant PAR LE HAUT, sur toute la largeur, et sont
+     ranges trois par ligne — exactement comme dans le module editeur
+     d'une page de fonte. */
+  .font-row .bs-editor {
+    flex-wrap: wrap;
+    /* les deux lignes se suivent par le haut : sans ca la seconde
+       (la zone de texte) se retrouvait ecrasee a zero */
+    align-content: flex-start;
+  }
+
+  /* Reglages ouverts : le module s'allonge pour les accueillir, au
+     lieu de rogner la zone de texte. La hauteur imposee est sur
+     .bs-editor, pas sur .font-row — c'est elle qu'il faut lever. */
+  .font-row .bs-editor.is-drawer-open {
+    height: auto;
+  }
+  .font-row:has(.bs-editor.is-drawer-open) {
+    height: auto;
+  }
+
+  .font-row .editor__preview {
+    flex: 1 1 0;
+    min-height: clamp(130px, 20vh, 240px);
+  }
+
+  .font-row .editor__panel {
+    order: -1;                 /* au-dessus de la zone de texte */
+    flex: 0 0 100%;
+    width: 100%;
+    /* height: auto obligatoire : la regle de base pose height: 100%,
+       qui vaut ZERO des que le module n'a plus de hauteur imposee. */
+    height: auto;
+    max-height: 0;
+    margin: 0;
+    overflow: hidden;
+    transition: max-height 0.26s ease, margin 0.26s ease;
+  }
+
+  .font-row .bs-editor.is-drawer-open .editor__panel {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-content: start;
+    gap: 7px 6px;
+    flex: 0 0 100%;
+    width: 100%;
+    height: auto;
+    max-height: 60vh;
+    margin: 0 0 var(--space-2);
+    overflow-y: auto;
+  }
+
+  .font-row .bs-editor.is-drawer-open .editor__panel .editor__align {
+    grid-column: 1 / -1;
+  }
+
+  .font-row .editor__panel .ctl .dots {
+    display: none;
+  }
+
   .hero {
     justify-content: flex-end;
   }
