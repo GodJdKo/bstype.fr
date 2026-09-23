@@ -230,6 +230,12 @@
       inner.appendChild(c);
     }
 
+    /* la souris quitte la bulle : elle se ferme (voir onLeave) */
+    el.addEventListener("mouseleave", onLeave);
+    el.addEventListener("mouseenter", () => {
+      if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = 0; }
+    });
+
     document.body.appendChild(el);
     return el;
   }
@@ -244,10 +250,6 @@
     spin();
     document.addEventListener("keydown", onKey, true);
     document.addEventListener("mousedown", onDoc, true);
-    el.addEventListener("mouseleave", onLeave);
-    el.addEventListener("mouseenter", () => {
-      if (leaveTimer) { clearTimeout(leaveTimer); leaveTimer = 0; }
-    });
   }
 
   function hide() {

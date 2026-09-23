@@ -280,22 +280,12 @@
   }
 
   function formeDuModule() {
-    /* hauteur reelle d'un module : elle depend de la feuille de
-       style (--zone-h), pas d'une valeur ecrite ici */
-    let h = 480;
     let l = document.documentElement.clientWidth;
     if (grid) {
-      const sonde = document.createElement("div");
-      sonde.className = "grid-cell";
-      sonde.style.visibility = "hidden";
-      grid.appendChild(sonde);
-      const r = sonde.getBoundingClientRect();
-      if (r.height > 10) h = r.height;
-      sonde.remove();
       const rg = grid.getBoundingClientRect();
       if (rg.width > 10) l = rg.width;
     }
-    return { colonne: l / 4, hauteur: h };
+    return { colonne: l / 4, hauteur: hauteurZone() };
   }
 
   function largeurPourForme(ratio, forme) {
@@ -510,6 +500,11 @@
       return Math.min(n, r && r.max ? r.max : plage[1]);
     };
 
+    /* mesurees UNE fois pour toute la grille, pas a chaque rangee :
+       chaque mesure oblige le navigateur a recalculer la page */
+    const zone = hauteurZone();
+    const largeurColonne = (grid.getBoundingClientRect().width || 1) / n;
+
     let rangee = [];
     let pris = 0;
 
@@ -534,7 +529,7 @@
         c.style.setProperty("--cell-span", c._span);
         c.dataset.span = c._span;
       });
-      poserHauteur(rangee, n);
+      poserHauteur(rangee);
       rangee = [];
       pris = 0;
     }
@@ -544,10 +539,8 @@
        qui empeche les trous. Cette hauteur est la plus grande des
        envies : un media veut la hauteur qui respecte sa forme, les
        autres modules veulent celle qu'ils ont tiree au sort. */
-    function poserHauteur(cases, colonnes) {
+    function poserHauteur(cases) {
       if (!cases.length) return;
-      const zone = hauteurZone();
-      const largeurColonne = (grid.getBoundingClientRect().width || 1) / colonnes;
       let veut = 0;
       cases.forEach((c) => {
         const ratio = parseFloat(c.dataset.ratio || "0");
@@ -560,7 +553,7 @@
              l'editeur empile ses reglages et sa zone de texte, il lui
              faut de la hauteur ; le jeu de caracteres, lui, tient
              mieux en moins haut, l'apercu prenant la moitie. */
-          if (colonnes <= 1) {
+          if (n <= 1) {
             if (c.dataset.type === "editor") m = Math.max(m, 1.7);
             if (c.dataset.type === "characterset") m = Math.min(m, 0.85);
           }
@@ -1186,8 +1179,14 @@
     }
 
     /* taille de case : la plus grande qui fait tout tenir ; sous le
-       minimum, la grille defile. */
-    const MIN = 26, MAX = 72;
+       minimum, la grille defile. Au DOIGT le minimum monte a 40 px :
+       une case de 26 px ne se vise pas (voir « DOIGTS » dans
+       base.css). Il y a moins de cases par ligne, et on fait
+       defiler. Ce reglage vit ICI et pas dans la feuille de style :
+       la taille calculee est posee directement sur la grille, elle
+       l'emporterait sur toute regle CSS. */
+    const AU_DOIGT = window.matchMedia && window.matchMedia("(pointer: coarse)").matches;
+    const MIN = AU_DOIGT ? 40 : 26, MAX = 72;
     function sizeGrid() {
       const w = gridEl.clientWidth, h = gridEl.clientHeight, n = chars.length;
       if (!w || !h || !n) return;
@@ -1509,9 +1508,16 @@
     ajusterGrille();
   });
 
-  /* la grille se recalcule quand la fenetre change de largeur */
+  /* La grille se recalcule quand la fenetre change de LARGEUR, et
+     seulement dans ce cas : sur telephone la barre d'adresse change
+     la hauteur en plein defilement, et tout recalculer a ce
+     moment-la faisait sauter la page sous le doigt. */
   let minuteurTaille = 0;
+  let largeurGrille = document.documentElement.clientWidth;
   window.addEventListener("resize", () => {
+    const l = document.documentElement.clientWidth;
+    if (l === largeurGrille) return;
+    largeurGrille = l;
     clearTimeout(minuteurTaille);
     minuteurTaille = setTimeout(ajusterGrille, 120);
   });

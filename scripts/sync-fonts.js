@@ -22,8 +22,8 @@
           a completer (designer, annee, textes...)
      4. CREE le dossier de la page specimen fonts/<slug>/ a partir
         de fonts/_template.html, avec son sous-dossier media/
-     5. regenere les manifestes media (comme
-        scripts/generate-media-manifest.js)
+     5. regenere les manifestes media (fonts/<slug>/media/
+        manifest.json), avec les dimensions de chaque fichier
 
    Rien n'est ecrase de ce que tu as ecrit a la main : les textes,
    le designer, l'annee et les dispositions sont conserves.
@@ -31,6 +31,8 @@
 
 const fs = require("fs");
 const path = require("path");
+const crypto = require("crypto");
+const { execFileSync } = require("child_process");
 
 const ROOT = path.join(__dirname, "..");
 const FONT_DIR = path.join(ROOT, "assets", "fonts");
@@ -993,9 +995,7 @@ function ensureCommonScripts(file) {
          + indent + '<script src="' + prefix + 'samples.js' + ver + '"></script>\n';
   }
   if (!html.includes("assets/js/idle-glitch.js")) {
-    const vendor = prefix.replace("assets/js/", "assets/vendor/");
     add += indent + "<!-- Effet de dereglement quand on ne fait rien -->\n"
-         + indent + '<script src="' + vendor + 'p5.min.js"></script>\n'
          + indent + '<script src="' + prefix + 'page-snapshot.js' + ver + '"></script>\n'
          + indent + '<script src="' + prefix + 'idle-glitch.js' + ver + '"></script>\n';
   }
@@ -1102,9 +1102,10 @@ gif, mp4, webm, mov). Elles apparaissent dans les zones "media"
 de la page, choisissables dans le sous-menu du menu de zone.
 
 Mode de lecture des videos : voir playback.txt.
-Apres tout ajout/retrait, relancer depuis la racine :
-
-  node scripts/sync-fonts.js
+Apres tout ajout ou retrait : double-cliquer Maj.command, a la
+racine du projet (le navigateur ne sait pas lister un dossier :
+c'est lui qui ecrit la liste, manifest.json, avec la taille de
+chaque fichier).
 `;
 
 const PLAYBACK_README = `# Mode de lecture des videos de ce dossier.
@@ -1186,6 +1187,43 @@ function manifestFor(slug) {
   return files.length;
 }
 
+/* ---------- la photo du pied de page ----------
+   Le site affiche assets/pied.webp : la meme image, dix fois plus
+   legere. assets/pied.png reste l'ORIGINAL — c'est lui qu'on
+   remplace. Quand il change, on refait pied.webp avec cwebp s'il
+   est installe (brew install webp) ; sinon on retire l'ancien
+   pied.webp, et le site retombe tout seul sur pied.png (voir
+   footer.js).
+   On reconnait un changement a l'EMPREINTE du fichier, gardee dans
+   assets/pied.source.txt : une date de fichier ne suffit pas, une
+   copie depuis le Finder garde la date de l'original. */
+const PIED_PNG = path.join(ROOT, "assets", "pied.png");
+const PIED_WEBP = path.join(ROOT, "assets", "pied.webp");
+const PIED_SOURCE = path.join(ROOT, "assets", "pied.source.txt");
+
+function refairePied() {
+  if (!fs.existsSync(PIED_PNG)) return null;
+  const empreinte = crypto.createHash("sha1").update(fs.readFileSync(PIED_PNG)).digest("hex");
+  const notee = fs.existsSync(PIED_SOURCE)
+    ? (fs.readFileSync(PIED_SOURCE, "utf8").match(/[0-9a-f]{40}/) || [""])[0]
+    : "";
+  if (notee === empreinte && fs.existsSync(PIED_WEBP)) return null;
+
+  const outils = ["cwebp", "/opt/homebrew/bin/cwebp", "/usr/local/bin/cwebp"];
+  for (const outil of outils) {
+    try {
+      execFileSync(outil, ["-quiet", "-q", "88", "-alpha_q", "100", "-m", "6", "-sharp_yuv", PIED_PNG, "-o", PIED_WEBP]);
+      fs.writeFileSync(PIED_SOURCE,
+        "Empreinte de assets/pied.png ayant servi a fabriquer assets/pied.webp.\n" +
+        "Fichier ecrit par scripts/sync-fonts.js : ne pas modifier.\n" + empreinte + "\n");
+      return "pied.webp refait depuis pied.png";
+    } catch (_e) { /* outil suivant */ }
+  }
+  if (fs.existsSync(PIED_WEBP)) fs.unlinkSync(PIED_WEBP);
+  if (fs.existsSync(PIED_SOURCE)) fs.unlinkSync(PIED_SOURCE);
+  return "pied.png a change mais cwebp est absent : le site affiche pied.png (1 Mo). Pour la version legere : brew install webp, puis relancer.";
+}
+
 /* ---------- go ---------- */
 const files = readFontFiles();
 if (!files.length) {
@@ -1236,6 +1274,8 @@ pages.forEach((f) => { if (ensureCommonScripts(f)) wired += 1; });
 pages.forEach((f) => { if (ensureBootScript(f)) wired += 1; });
 if (ensureInUseScript(path.join(ROOT, "index.html"))) wired += 1;
 
+const piedInfo = refairePied();
+
 const stamp = Date.now();
 let stamped = 0;
 pages.forEach((f) => { if (stampAssets(f, stamp)) stamped += 1; });
@@ -1258,6 +1298,7 @@ finalFonts.forEach((f) => {
 });
 console.log(`Pages specimen   : ${finalFonts.length} (dont ${pagesCreated} creee(s))`);
 console.log(`Media indexes    : ${media}`);
+if (piedInfo) console.log(`Photo du pied    : ${piedInfo}`);
 accentues.forEach((f) => console.log(`  ! nom fragile   : ${f} (accent ou espace — prefere des lettres simples et des tirets)`));
 console.log(`Cache navigateur : ${stamped} page(s) reestampillees (plus besoin de vider le cache)`);
 console.log(`Pastilles accueil: ${finalFonts.length} fonte(s)` + (pillsAdded ? ` (${pillsAdded} ajoutee(s))` : ""));

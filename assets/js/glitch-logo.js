@@ -386,7 +386,7 @@
 
       /* --- le film s'est coince : on finit en fondu --- */
       if (fondu > 0) {
-        fondu -= maintenant - (dernierDessin || maintenant);
+        fondu -= dt * 1000;
         const reste = Math.max(0, fondu / Math.max(1, fonduTotal));
         hote.style.opacity = reste.toFixed(3);
         poserVoile(reste);
@@ -396,9 +396,9 @@
       }
 
       /* En arriere on SAUTE des images du film : a chaque dessin on
-         recule de plusieurs images d'un coup. Il y a une image cle
-         toutes les dix images dans ce fichier, donc reculer y est
-         rapide — quand le navigateur veut bien. */
+         recule de plusieurs images d'un coup. Chaque image du fichier
+         est une image cle (voir README.md) : reculer ne demande
+         jamais de redecoder ce qui precede. */
       const saut = Math.max(1, Math.round((CADENCE_FILM / CADENCE) * vitesse));
       const t = video.currentTime - Math.max(dt * vitesse, saut / CADENCE_FILM);
       if (t <= 0) { sens = 0; retirer(); return; }
@@ -530,15 +530,34 @@
     if (document.hidden) { sens = 0; retirer(); try { video.currentTime = 0; } catch (_e) {} }
   });
 
-  /* On ne va chercher le film qu'APRES le chargement de la page :
-     il pese quelques mega-octets, il ne doit pas se mettre en
-     travers du site. */
+  /* Quand va-t-on chercher le film ?
+     - sur l'ACCUEIL, tout de suite : c'est lui qui fait l'ecran de
+       chargement, et boot.js ne l'attend que deux secondes ;
+     - ailleurs, APRES le chargement de la page : il pese quelques
+       mega-octets, il ne doit pas se mettre en travers du site.
+     PIEGE IPHONE : Safari sur iOS ne telecharge RIEN d'une video
+     tant qu'on ne lui a pas demande de la jouer — preload="auto"
+     est ignore. Sans l'amorce ci-dessous, « loadeddata » n'arrivait
+     jamais : pas de logo pendant le dereglement, pas d'ouverture sur
+     l'accueil. On lance donc la lecture (muette, autorisee sans
+     geste) et on l'arrete aussitot. En mode economie d'energie la
+     lecture est refusee : un saut dans le film declenche alors le
+     chargement a sa place. */
   function telecharger() {
     if (video.src) return;
     video.src = BASE + FICHIER;
+    video.load();
+    const p = video.play();
+    if (p && p.then) {
+      p.then(() => { if (!sens) video.pause(); })
+        .catch(() => { try { video.currentTime = 0.001; } catch (_e) {} });
+    }
   }
-  if (document.readyState === "complete") setTimeout(telecharger, 400);
-  else window.addEventListener("load", () => setTimeout(telecharger, 400), { once: true });
+  function programmer() {
+    if (window.BSBoot && window.BSBoot.accueil) { telecharger(); return; }
+    if (document.readyState === "complete") setTimeout(telecharger, 400);
+    else window.addEventListener("load", () => setTimeout(telecharger, 400), { once: true });
+  }
 
   video.addEventListener("loadeddata", () => {
     if (pret) return;
@@ -571,6 +590,9 @@
         return video.currentTime;
       },
       get pret() { return pret; },
+      /* le film est-il en route ? (boot.js compte ses deux secondes
+         a partir de la) */
+      get demande() { return !!video.src; },
       get etat() {
         return {
           pret: pret,
@@ -586,4 +608,5 @@
   }
   if (document.body) monter();
   else document.addEventListener("DOMContentLoaded", monter);
+  programmer();
 })();

@@ -1,0 +1,3 @@
+Empreinte de assets/pied.png ayant servi a fabriquer assets/pied.webp.
+Fichier ecrit par scripts/sync-fonts.js : ne pas modifier.
+aae7c8cc75b78f234be388abd1e00b5e1160a09b

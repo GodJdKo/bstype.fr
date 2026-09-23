@@ -66,15 +66,23 @@ window.BSPopup = (function () {
     if (!inside) closeAll();
   }
 
+  /* On ferme quand la fenetre change de LARGEUR. Pas de hauteur :
+     sur telephone la barre d'adresse la change des qu'on bouge, et
+     le menu se refermait sous le doigt. */
+  let largeurOuverte = 0;
+  function onResize() {
+    if (document.documentElement.clientWidth !== largeurOuverte) closeAll();
+  }
   function bind() {
+    largeurOuverte = document.documentElement.clientWidth;
     document.addEventListener("keydown", onKey, true);
     document.addEventListener("mousedown", onDoc, true);
-    window.addEventListener("resize", closeAll);
+    window.addEventListener("resize", onResize);
   }
   function unbind() {
     document.removeEventListener("keydown", onKey, true);
     document.removeEventListener("mousedown", onDoc, true);
-    window.removeEventListener("resize", closeAll);
+    window.removeEventListener("resize", onResize);
   }
 
   /* Dernier clic : le menu s'ouvre LA ou on a clique, pas sous

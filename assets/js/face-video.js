@@ -513,7 +513,13 @@
     else { pending = 2; drawLive(); }
   });
   window.addEventListener("scroll", onScroll, { passive: true });
-  window.addEventListener("resize", updateMode);
+  /* On ne change de mode (suivre le defilement / tourner en boucle)
+     que si la page change de nature. Sur telephone la barre d'adresse
+     change la hauteur EN PLEIN defilement : recaler la vignette a ce
+     moment-la lui coupait son elan. */
+  window.addEventListener("resize", () => {
+    if ((scrollRange() >= 40) !== !looping) updateMode();
+  });
 
   function mount() {
     document.body.appendChild(video);

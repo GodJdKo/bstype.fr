@@ -9,12 +9,14 @@
      - BS.type, en grand
      - la ligne orange (deux lignes), traduite par i18n.js
      - la ligne « fondee par... », en bas a gauche
-     - la photo assets/pied.png, calee en bas a droite, qui
-       deborde du cadre
+     - la photo du pied, calee a droite sur toute la hauteur
 
    POUR CHANGER LE TEXTE : assets/js/i18n.js, clefs foot.*
    POUR CHANGER LA PHOTO : remplacer assets/pied.png (fond
-   transparent, sujet cale en bas).
+   transparent, sujet cale en bas), puis lancer Maj.command : il en
+   refait la version legere, assets/pied.webp (100 Ko au lieu d'1 Mo).
+   C'est elle que le site affiche ; pied.png reste l'original, et le
+   repli si la version legere manque.
    POUR CHANGER LES TAILLES ET LES COULEURS : .bs-pied dans
    assets/css/base.css.
    ============================================================ */
@@ -60,15 +62,19 @@
 
     const photo = document.createElement("img");
     photo.className = "bs-pied__photo";
-    photo.src = BASE + "assets/pied.png";
     photo.alt = "";
     photo.loading = "lazy";
     photo.setAttribute("aria-hidden", "true");
+    /* la version legere d'abord ; si elle manque, l'original */
+    photo.addEventListener("error", function repli() {
+      photo.removeEventListener("error", repli);
+      photo.src = BASE + "assets/pied.png";
+    });
+    photo.src = BASE + "assets/pied.webp";
     /* La photo prend toute la hauteur du pied ; pour que sa LARGEUR
-       suive, il lui faut ses proportions — la grille ne sait pas les
-       deviner avant d'avoir la hauteur, et la boite se retrouvait
-       etroite avec l'image perdue au milieu. On les releve sur
-       l'image chargee : n'importe quelle photo marche. */
+       suive, il lui faut ses proportions, que le navigateur ne
+       connait qu'une fois l'image chargee. On les releve a ce
+       moment-la : n'importe quelle photo marche. */
     photo.addEventListener("load", () => {
       if (photo.naturalWidth && photo.naturalHeight) {
         photo.style.aspectRatio = photo.naturalWidth + " / " + photo.naturalHeight;

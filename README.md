@@ -477,7 +477,15 @@ Le même sur toutes les pages, construit par `assets/js/footer.js`.
   orange — le retour à la ligne est écrit dans le texte) et
   `foot.founded` ;
 - **la photo** : `assets/pied.png`. Fond transparent, sujet calé en
-  bas : elle est posée en bas à droite et déborde du cadre ;
+  bas : elle est posée à droite, sur toute la hauteur du pied. Le
+  site affiche en réalité `assets/pied.webp`, la même image **dix fois
+  plus légère** (104 Ko au lieu d'1 Mo). Tu ne touches qu'au PNG :
+  `Maj.command` refait le WebP tout seul quand le PNG change (il lui
+  faut `cwebp`, installé par `brew install webp` ; sans lui, il retire
+  l'ancien WebP et le site affiche le PNG, plus lourd mais juste). Il
+  reconnaît un changement à l'empreinte notée dans
+  `assets/pied.source.txt` — pas à la date du fichier, qu'une copie
+  depuis le Finder garde ;
 - **les tailles, les couleurs, le débord** : bloc `.bs-pied` dans
   `assets/css/base.css`.
 
@@ -517,9 +525,191 @@ largeur tirée au sort, comme avant.
 
 ---
 
+## Sur téléphone
+
+Ce qui a été mesuré, et corrigé, à 320, 375, 390, 768 et 1440 px.
+
+**Les modules.** L'éditeur passe à **trois réglages par ligne** :
+empilés, ils prenaient toute la hauteur du module et il ne restait
+rien pour la zone de texte — qui est pourtant ce qu'on vient
+essayer. Il gagne aussi de la hauteur (1,7 fois la hauteur de base).
+Le jeu de caractères fait l'inverse : **moins haut** (0,85), et son
+aperçu prend **la moitié** du module au lieu de 45 %, le glyphe
+occupant 82 % de cette moitié au lieu de 62 %.
+
+**Les pastilles de l'accueil** restent **dispersées et dérivantes**
+sur téléphone. Les mettre en flux normal les rangeait en colonne, ce
+qui n'est plus la page d'accueil du site : `placePills` tient déjà
+compte de la largeur et retombe tout seul sur une ou deux colonnes
+de cases, en tirant une position au hasard dans chaque case.
+
+**La barre orange** d'une page de fonte tient sur **une seule
+ligne** : sur téléphone elle est coupée juste avant le nom de
+l'auteur (`.specimen__meta-qui`), plutôt que de passer à deux lignes.
+
+**Les libellés des réglages** tiennent eux aussi sur une ligne — un
+libellé qui passe à deux décale sa boîte et les réglages voisins ne
+sont plus alignés. « couleur du texte » et « couleur du fond » sont
+devenus « texte » et « fond ».
+
+**L'éditeur de l'accueil** suit le même modèle que celui d'une page
+de fonte : les réglages s'ouvrent **par le haut**, sur toute la
+largeur, trois par ligne — au lieu de sortir par la gauche en
+colonne étroite. Le module passe en colonne : réglages, rangée de
+boutons, zone de texte.
+
+> Deux pièges dans ce passage en colonne. La hauteur imposée est sur
+> `.bs-editor`, pas sur `.font-row` : c'est elle qu'il faut lever. Et
+> le panneau porte `height: 100%`, qui vaut **zéro** dès que le
+> module n'a plus de hauteur imposée — il lui faut `height: auto`.
+
+**Le bloc du titre remonte** sur téléphone, et la zone des pastilles
+se réduit d'autant : `placePills` mesure le haut du titre, il n'y a
+rien d'autre à régler. Le noir derrière le titre déborde maintenant
+de `-100vh` vers le bas et se fait couper par `overflow: hidden` —
+compter une hauteur exacte la rendait fausse au premier changement
+de marge.
+
+**Les cibles au doigt.** Mesuré à 320 px : le chevron d'un module
+faisait 11 × 12 pixels, les liens du haut 20 pixels de haut, la
+pastille de couleur 16 de large, les cases de glyphes 28. Apple
+comme Google recommandent 44 points. Une zone invisible de 12
+pixels est posée autour de chaque bouton — **rien ne bouge à
+l'écran** — et les cases de glyphes passent à 40 pixels. Uniquement
+sur écran tactile (`pointer: coarse`) : à la souris la précision est
+là, et une zone trop large gênerait.
+
+**Testé dans le vrai Safari.** Le simulateur iPhone de Xcode
+(iOS 26.3, iPhone 16e et 17 Pro) fait tourner le vrai Safari : tout
+ce qui suit y a été vérifié, pas seulement dans un navigateur
+d'ordinateur rétréci.
+
+**La barre d'adresse change la hauteur de la fenêtre EN PLEIN
+DÉFILEMENT.** Chaque fois, le navigateur annonce un redimensionnement.
+Ce qui réagissait à ça réagit maintenant **à la largeur seulement** :
+
+- les **pastilles** de l'accueil étaient retirées au sort à chaque
+  fois — elles sautaient partout pendant qu'on faisait défiler ;
+- la **grille** d'une page de fonte se recalculait sous le doigt ;
+- les **menus** se refermaient tout seuls ;
+- la **vignette** perdait son élan (l'inertie) au moment même où
+  elle en avait.
+
+**Le hero de l'accueil** fait `100svh` : la hauteur de l'écran
+*quand la barre d'adresse est visible*, c'est-à-dire au chargement.
+Avec `100vh` (barre repliée), le titre et le sous-titre glissaient
+sous la barre d'outils du téléphone. La bulle « à propos » ne
+dépasse plus non plus du haut de l'écran.
+
+**Les voiles plein écran** (chargement, effet, logo) descendent
+jusqu'en bas de l'écran. Sur iPhone (iOS 26) la page continue **sous
+la barre d'outils flottante** de Safari, plus bas que ce que couvre un
+élément fixe ordinaire : mesuré, 58 px barre repliée, 98 px dépliée.
+On voyait la page nue en bas de l'écran pendant le chargement comme
+pendant l'effet. Ils font maintenant `100lvh + 80px` sur écran
+tactile.
+
+**Les vidéos sur iPhone ne se chargent pas toutes seules.** Safari
+sur iOS ignore `preload="auto"` : il ne télécharge rien tant qu'on ne
+lui a pas demandé de jouer. Le film du logo n'arrivait donc
+**jamais** — pas de logo pendant l'effet, pas d'ouverture sur
+l'accueil. `glitch-logo.js` lance maintenant la lecture (muette,
+permise sans geste) et l'arrête aussitôt.
+
+**Mode économie d'énergie.** Les vidéos ne démarrent pas seules, et
+Safari pose un gros bouton ▶ par-dessus. Le bouton est retiré (ce
+sont des décors, pas des films à lancer) et la vidéo de l'accueil
+montre son image d'attente, `assets/landingMedia/landbg-poster.jpg`.
+
+**Les cases du jeu de caractères font 40 px au doigt.** C'était
+annoncé ici depuis un moment, mais la règle CSS ne servait à rien :
+la taille calculée par `render-grid.js` est posée directement sur la
+grille et l'emportait. Le minimum est maintenant appliqué au calcul
+lui-même.
+
+> **Reculer dans un film**, le navigateur d'un téléphone refuse
+> parfois : le logo se figeait puis disparaissait d'un coup. Un
+> garde surveille que le film recule vraiment ; s'il ne bouge plus
+> pendant 400 ms, on abandonne le retour image par image et on
+> **fond** — même durée, même effet à l'œil, et ça ne se coince
+> jamais.
+
+> **Une zone tactile ne se pose JAMAIS sur un élément qui contient
+> un champ natif.** La boîte d'un slider est un `<span>` avec un
+> `<input type="range">` dedans : la zone invisible ajoutée pour le
+> doigt se posait par-dessus l'input et avalait le geste — les
+> curseurs ne bougeaient plus du tout. Elle n'est ajoutée qu'aux
+> boutons et à la pastille de couleur, qui n'ont rien dedans.
+
+> **`touch-action: none` sur les sliders.** Sans ça le navigateur
+> prend le glissement pour un défilement du panneau de réglages, et
+> le curseur ne suit pas le doigt.
+
+> **Un `<input type="range">` ne se photographie pas.** Il est
+> dessiné par le navigateur lui-même, et dans l'image SVG il retombe
+> sur son dessin par défaut : le curseur ne tombait plus au même
+> endroit quand l'effet démarrait. Il est remplacé dans la photo par
+> un trait posé à la bonne position, calculée depuis la valeur.
+
+> **Les unités d'écran dans la photo : LA cause du décalage.** La
+> photo de la page est une image SVG, et dans une image SVG `100vh`,
+> `100svh`, `16vw`... se calculent sur la taille **de l'image**, pas
+> sur celle de l'écran. Sur iPhone l'image est plus haute que la
+> fenêtre (elle passe sous la barre d'outils) : le hero de la photo
+> était plus haut que le vrai, et tout ce qui suivait descendait de
+> 40 à 120 px — « le site a l'air défilé plus haut qu'il ne l'est ».
+> `page-snapshot.js` repère maintenant toutes les règles qui
+> dépendent de la taille de l'écran (directement, ou par une variable
+> CSS qui en dépend) et recopie dans la photo la valeur **mesurée**
+> sur la page. Même chose pour les éléments **fixes** (la tête),
+> reposés depuis le haut, et pour ce qui est **animé** (la dérive des
+> pastilles), photographié là où il est. Mesuré dans le Safari de
+> l'iPhone : **0 px** d'écart sur le hero, les modules, le pied de
+> page et la tête, contre 40 à 120 avant.
+
+> **La photo suit la fenêtre VISIBLE, pas la fenêtre de mise en
+> page.** Sur iPhone, quand la barre d'adresse est à moitié sortie,
+> les deux ne coïncident pas : la photo était dessinée quelques
+> dizaines de pixels trop haut, et le site avait l'air défilé plus
+> bas qu'il ne l'était. Le décalage vient de
+> `window.visualViewport.offsetTop`, ajouté au défilement. Sur
+> ordinateur il vaut zéro, rien ne change.
+
+> **Le fond vert de la vignette** n'était pas toujours détouré : la
+> couleur du fond est relevée sur la première image décodée, et sur
+> téléphone cette image arrive parfois noire. On ne retient plus
+> rien tant qu'aucun coin n'est franchement vert — on redemande à
+> l'image suivante, jusqu'à trente fois.
+
+---
+
+## Les noms de fichiers des médias
+
+> **Piège à ne plus refaire.** macOS écrit les accents en **deux
+> morceaux** (« e » + accent) ; git, les serveurs et les navigateurs
+> comparent les **octets**. Un `spécimen.jpg` écrit en deux morceaux
+> dans le manifeste demandait donc un fichier qui n'existe pas pour
+> le serveur, et le module restait vide alors que le fichier était
+> bien là.
+
+Le manifeste écrit maintenant la forme **recomposée**, celle que git
+enregistre. Et si un média ne se charge pas, le site retente
+automatiquement avec l'autre écriture avant d'abandonner.
+
+`Maj.command` signale les noms fragiles :
+
+```
+! nom fragile : hexcd/media/spécimen hex orange.jpg
+```
+
+Ça marche, mais des **lettres simples et des tirets** évitent la
+question pour de bon.
+
+---
+
 ## Le poids du site
 
-Le site entier pèse **17 Mo**. Il en pesait 60. Aucun visuel n'a
+Le site entier pèse **15 Mo**. Il en pesait 60. Aucun visuel n'a
 changé à la taille où on le voit ; les originaux sont tous rangés
 dans `_originaux/`, qui **ne fait pas partie du site** — tu peux le
 déplacer ailleurs ou le supprimer quand tu es rassuré.
@@ -543,12 +733,38 @@ Si tu déposes un nouveau média, la commande qui va bien :
 ffmpeg -i source.mov -vf "scale='min(1440,iw)':-2" -r 30 -c:v libx264 -pix_fmt yuv420p -crf 22 -movflags +faststart -an sortie.mp4
 ```
 
-> Deux choses **volontairement laissées** telles quelles :
-> `assets/vendor/p5.min.js` (1,0 Mo, chargé sur chaque page — on
-> n'en utilise qu'une poignée de fonctions, mais c'est p5 qui a été
-> demandé) et `assets/pied.png` (1,0 Mo — il lui faut sa
-> transparence, et il est déjà compressé au maximum de ce que le PNG
-> sait faire).
+Et ce qui a été allégé ensuite :
+
+- **p5.js est retiré** : 1 Mo chargé et lu sur **chaque** page, pour
+  trois fonctions (un bruit de Perlin, un tableau de pixels, une
+  boucle). L'effet de dérèglement tourne maintenant sur un simple
+  canvas, avec les mêmes réglages et le même rendu — et plus vite :
+  il ne relit plus jamais la toile, il garde ses pixels en mémoire
+  (moins d'une milliseconde par image, mesuré dans le Safari de
+  l'iPhone). (p5 reste dans l'historique git si tu veux le
+  retrouver.)
+- **la photo du pied** : 1 Mo → 104 Ko (`pied.webp`, voir « Le pied
+  de page ») ;
+- **les fichiers de travail** ne sont plus publiés avec le site :
+  les projets Premiere (`*.prproj`, et le dossier
+  `Adobe Premiere Pro Auto-Save/`) et `fonts/_corbeille/` sont dans
+  `.gitignore`. Ils restent sur l'ordinateur, rien n'est effacé ;
+- **les copies de conflit** de OneDrive (`index-MacBook Pro de
+  Enzo.html` et compagnie) sont supprimées, ainsi que les fichiers
+  qui ne servaient plus : `dropdown.js`, `render-specimen.js`,
+  `layout.css`, et `scripts/generate-media-manifest.js` — un ancien
+  script qui réécrivait les manifestes **sans** les dimensions des
+  médias ni les accents corrigés : le lancer aurait recassé le
+  recadrage et le média « spécimen hex orange ». Tout passe par
+  `Maj.command`.
+- **un script étranger** retiré de toutes les pages : un bloc
+  « inline edit » de Perplexity, laissé par un outil d'édition,
+  qui écoutait les messages des pages parentes.
+
+Laissés tels quels, volontairement : **les affiches JPEG des
+fontes**. Ce sont des typographies orange sur noir, enregistrées sans
+sous-échantillonnage des couleurs ; les recompresser baverait sur les
+lettres, et elles ne se chargent que lorsqu'on arrive dessus.
 
 ---
 
@@ -866,8 +1082,40 @@ Les réglages sont en haut de `assets/js/glitch-logo.js` :
 | `MARGE_VERT` | de combien le vert doit dépasser le rouge et le bleu (6 sur 255) |
 | `PIXELS_MAX` | taille maximum de la toile, pour les très grands écrans |
 
-Le film n'est téléchargé qu'**après** le chargement de la page : il
-pèse 4 Mo, il ne doit pas se mettre en travers du site.
+Sur l'**accueil**, le film est demandé **tout de suite** : c'est lui
+qui fait l'écran de chargement. Il a alors **deux secondes** pour
+être prêt, comptées à partir du moment où il est demandé
+(`ATTENTE_FILM` dans `boot.js`). Passé ce délai on entre sur le site
+sans lui : mieux vaut une page qu'un écran noir. Sur les autres
+pages il n'est téléchargé qu'**après** le chargement : il ne sert
+qu'à l'effet.
+
+> Avant, le film n'était demandé qu'après le chargement complet de
+> la page, alors que les deux secondes partaient dès le début : sur
+> un réseau de téléphone, l'ouverture sautait presque à chaque fois.
+
+> **Le fondu de secours ne finissait jamais.** Quand le film se
+> coince en reculant, le logo doit s'effacer en fondu. Le temps
+> écoulé y était calculé après avoir déjà été remis à zéro : le fondu
+> restait bloqué au premier instant, et le logo restait à l'écran.
+> Corrigé ; au passage le recul a été vérifié dans le vrai Safari de
+> l'iPhone : saut aux trois quarts, retour régulier jusqu'à zéro en
+> 2,2 s.
+
+> **Le film est encodé TOUT EN IMAGES CLÉS** (`-g 1`). Reculer dans
+> une vidéo oblige le navigateur à repartir de la dernière image clé
+> et à redécoder jusqu'au point voulu ; sur téléphone il abandonnait,
+> et le logo se figeait au lieu de se défaire. Avec une image clé
+> partout, reculer ne coûte rien. La commande :
+>
+> ```bash
+> ffmpeg -i source.mp4 -c:v libx264 -profile:v main -pix_fmt yuv420p -crf 42 -g 1 -bf 0 -sc_threshold 0 -movflags +faststart -an BSGLITCH.mp4
+> ```
+>
+> `-crf 42` paraît brutal : le film ne sert que de **pochoir**, sa
+> couleur ne compte pas. Mesuré, le masque garde 7,48 % des pixels
+> contre 7,81 % à qualité maximale. Et le fichier ne pèse que
+> 2,9 Mo malgré les 359 images clés.
 
 > ⚠️ **Le fichier actuel est encodé en HEVC.** Safari le lit, Chrome
 > seulement là où la machine sait le décoder, Firefox souvent pas du
@@ -898,12 +1146,12 @@ complet (tri par luminosité/teinte/saturation, sens et pondération
 réglables). Les deux sont ici fondus en un seul, rendus progressifs,
 et branchés sur la photo de la page.
 
-**p5 ne sait pas photographier la page** — aucun navigateur ne le
-sait. C'est `page-snapshot.js` qui s'en charge, en redessinant la
-page dans une image SVG (la méthode de `html2canvas`). p5 ne
-travaille que sur cette photo.
+**Aucun navigateur ne sait photographier la page.** C'est
+`page-snapshot.js` qui s'en charge, en redessinant la page dans une
+image SVG (la méthode de `html2canvas`). L'effet ne travaille que
+sur cette photo.
 
-### Quatre pièges de la photographie de page
+### Les pièges de la photographie de page
 
 Déjà traités dans `page-snapshot.js`, à ne pas défaire :
 
@@ -935,6 +1183,11 @@ Déjà traités dans `page-snapshot.js`, à ne pas défaire :
   les fontes du catalogue sont installées, le repli tombait même sur
   une vraie fonte du même nom — d'où le bug difficile à voir, où
   seules *certaines* fontes changeaient d'allure.
+
+- **les unités d'écran** (`vh`, `svh`, `vw`...) se calculent sur la
+  taille de l'image, pas de l'écran : voir « Sur téléphone ». Leurs
+  valeurs mesurées sont recopiées dans la photo, comme la position
+  des éléments fixes et l'état des animations.
 
 Ce qu'on ne peut pas capturer : les images venant d'un autre site.
 Le navigateur l'interdit, elles sont retirées de la photo.
@@ -999,6 +1252,16 @@ des animations :
   fontes chargées. Avant, elle s'affichait avec la police de secours
   puis se recomposait : ce deuxième passage donnait l'impression que
   la page se rechargeait toute seule.
+
+- **La grille d'une page de fonte** mesurait la hauteur de référence
+  d'un module **une fois par rangée** — et chaque mesure oblige le
+  navigateur à recalculer toute la page. Elle la mesure maintenant
+  une seule fois par passage.
+- **L'éditeur** recalait son texte, son curseur et ses flèches dans
+  la même image que le changement de taille qui les déclenchait : le
+  navigateur signalait une boucle (« ResizeObserver loop », visible
+  dans la console de Safari à chaque ouverture de l'accueil). Ces
+  recalages attendent maintenant l'image suivante.
 
 Règle générale : tout ce qui tourne en continu doit s'arrêter quand
 ce n'est pas visible.
@@ -1065,8 +1328,8 @@ textes que tu y écris.
   graisse**. Le sous-menu s'ouvre sous la souris, par-dessus le menu
   parent : aucun déplacement à faire pour l'atteindre.
 - **Vignette vidéo** : monte du hors-champ en pivotant dès qu'on
-  défile, suit le scroll, et se met à tourner au bout de 4 s
-  d'inactivité (elle s'arrête au moindre geste).
+  défile (sur l'accueil), suit le scroll avec un peu d'élan, et se
+  balance doucement. Elle ne tourne plus au repos.
 
 Pour figer la disposition d'une fonte : `shuffleLayout: false` dans
 son bloc de `fonts-data.js`.

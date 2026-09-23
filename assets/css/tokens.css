@@ -15,11 +15,8 @@
   --color-line: rgba(217, 217, 217, 0.85); /* filets fins */
   --color-field: #191919;     /* fond des sliders et des selecteurs */
 
-  /* Zones selectionnables (dropdowns typo/graisse, cases actives) :
-     fond vert acide de la charte, en aplat leger. */
-  --color-select-bg: rgba(157, 255, 0, 0.14);
+  /* Halo vert acide autour du curseur d'un slider survole. */
   --color-select-bg-strong: rgba(157, 255, 0, 0.28);
-  --color-select-border: var(--color-lime);
 
   /* ---- Typographies (familles définies dans fonts.css) ---- */
   --font-ui: "BS Mono", "Courier New", monospace; /* typo de construction */

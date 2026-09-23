@@ -118,6 +118,18 @@ window.BSEditor = (function () {
 
   let measureCtx = null;
 
+  /* Pour les ResizeObserver : le recalage modifie la taille de ce
+     qu'on observe (le corps du texte, les fleches...). Fait tout de
+     suite, ca relance l'observateur dans la meme image et le
+     navigateur se plaint d'une boucle (« ResizeObserver loop »). On
+     le fait donc a l'image suivante, une seule fois par image. */
+  function aLImageSuivante(f) {
+    let attente = 0;
+    return () => {
+      if (!attente) attente = requestAnimationFrame(() => { attente = 0; f(); });
+    };
+  }
+
   /* ---- textes d'essai ----
      Ils sont COMMUNS a tout le catalogue : assets/js/samples.js.
      Aucune fonte n'a « son » texte : ce sont des textes pour
@@ -219,472 +231,471 @@ window.BSEditor = (function () {
     const body = document.createElement("div");
     body.className = "grid-cell__editor bs-editor";
 
+    const styles = stylesOf(font);
 
-  const styles = stylesOf(font);
+    /* Le texte de depart vient du fonds commun (samples.js), jamais
+       de la fiche de la fonte : un champ « texte » par fonte n'aurait
+       aucun sens, ce sont des textes pour ESSAYER une fonte. */
+    const baseDefaults = Object.assign({}, font.editorDefaults || {});
+    delete baseDefaults.text;
 
-  /* Le texte de depart vient du fonds commun (samples.js), jamais
-     de la fiche de la fonte : un champ « texte » par fonte n'aurait
-     aucun sens, ce sont des textes pour ESSAYER une fonte. */
-  const baseDefaults = Object.assign({}, font.editorDefaults || {});
-  delete baseDefaults.text;
+    const D = Object.assign(
+      {
+        text: pickSample("lines") || t("ed.sample"),
+        family: defaultStyle(font).label,
+        size: 40,
+        lineHeight: 1.3,
+        letterSpacing: 0,
+        color: "D9D9D9",
+        bg: "191919",
+        align: "left"
+      },
+      baseDefaults,
+      content || {},
+      identityPair()
+    );
 
-  const D = Object.assign(
-    {
-      text: pickSample("lines") || t("ed.sample"),
-      family: defaultStyle(font).label,
-      size: 40,
-      lineHeight: 1.3,
-      letterSpacing: 0,
-      color: "D9D9D9",
-      bg: "191919",
-      align: "left"
-    },
-    baseDefaults,
-    content || {},
-    identityPair()
-  );
+    const panel = document.createElement("div");
+    panel.className = "editor__panel";
+    const prevWrap = document.createElement("div");
+    prevWrap.className = "editor__prev-wrap";
+    const preview = document.createElement("div");
+    preview.className = "editor__preview";
+    preview.contentEditable = "true";
+    preview.spellcheck = false;
+    preview.textContent = D.text;
+    prevWrap.appendChild(preview);
+    body.append(panel, prevWrap);
 
-  const panel = document.createElement("div");
-  panel.className = "editor__panel";
-  const prevWrap = document.createElement("div");
-  prevWrap.className = "editor__prev-wrap";
-  const preview = document.createElement("div");
-  preview.className = "editor__preview";
-  preview.contentEditable = "true";
-  preview.spellcheck = false;
-  preview.textContent = D.text;
-  prevWrap.appendChild(preview);
-  body.append(panel, prevWrap);
+    let activeStyle = styles.find((s) => s.label === D.family) || defaultStyle(font);
 
-  let activeStyle = styles.find((s) => s.label === D.family) || defaultStyle(font);
+    function applyType() {
+      preview.style.fontFamily = "'" + (activeStyle.cssFamily || font.cssFamily) + "'";
+      preview.style.fontWeight = activeStyle.weight || 400;
+      preview.style.fontStyle = activeStyle.style || "normal";
+      document.fonts.ready.then(refilter);
+    }
+    function refilter() {
+      if (!window.BSGlyph || document.activeElement === preview) return;
+      const cur = preview.innerText;
+      const f = window.BSGlyph.filterText(cur, activeStyle.cssFamily || font.cssFamily);
+      if (f && f !== cur) preview.innerText = f;
+    }
+    preview.addEventListener("blur", refilter);
 
-  function applyType() {
-    preview.style.fontFamily = "'" + (activeStyle.cssFamily || font.cssFamily) + "'";
-    preview.style.fontWeight = activeStyle.weight || 400;
-    preview.style.fontStyle = activeStyle.style || "normal";
-    document.fonts.ready.then(refilter);
-  }
-  function refilter() {
-    if (!window.BSGlyph || document.activeElement === preview) return;
-    const cur = preview.innerText;
-    const f = window.BSGlyph.filterText(cur, activeStyle.cssFamily || font.cssFamily);
-    if (f && f !== cur) preview.innerText = f;
-  }
-  preview.addEventListener("blur", refilter);
-
-  /* A LA FRAPPE : un caractere que la fonte ne dessine pas est
-     remplace par le plus proche qu'elle possede (capitale -> bas de
-     casse, accent retire, sosie de dessin). On intercepte avant
-     l'insertion, donc le curseur et l'annulation restent normaux. */
-  preview.addEventListener("beforeinput", (e) => {
-    if (e.inputType !== "insertText" || !e.data || !window.BSGlyph) return;
-    const fam = activeStyle.cssFamily || font.cssFamily;
-    let out = "";
-    let changed = false;
-    for (const ch of e.data) {
-      if (/\s/.test(ch) || (window.BSGlyph.supports(fam, ch) && window.BSGlyph.hasInk(fam, ch))) {
-        out += ch;
-        continue;
+    /* A LA FRAPPE : un caractere que la fonte ne dessine pas est
+       remplace par le plus proche qu'elle possede (capitale -> bas de
+       casse, accent retire, sosie de dessin). On intercepte avant
+       l'insertion, donc le curseur et l'annulation restent normaux. */
+    preview.addEventListener("beforeinput", (e) => {
+      if (e.inputType !== "insertText" || !e.data || !window.BSGlyph) return;
+      const fam = activeStyle.cssFamily || font.cssFamily;
+      let out = "";
+      let changed = false;
+      for (const ch of e.data) {
+        if (/\s/.test(ch) || (window.BSGlyph.supports(fam, ch) && window.BSGlyph.hasInk(fam, ch))) {
+          out += ch;
+          continue;
+        }
+        out += window.BSGlyph.nearest(fam, ch);
+        changed = true;
       }
-      out += window.BSGlyph.nearest(fam, ch);
-      changed = true;
+      if (!changed) return;
+      e.preventDefault();
+      if (out) document.execCommand("insertText", false, out);
+    });
+
+    preview.style.setProperty("--ed-size", D.size + "px");
+    preview.style.setProperty("--ed-lh", D.lineHeight);
+    preview.style.setProperty("--ed-ls", D.letterSpacing + "em");
+    preview.style.textAlign = D.align;
+
+    /* un reglage = libelle pointille + selecteur en aplat gris.
+       Tous les reglages sont visibles en meme temps : un reglage,
+       un clic. */
+    function control(label, boxEl, onOpen) {
+      const c = document.createElement("div");
+      c.className = "ctl";
+      const head = document.createElement("div");
+      head.className = "ctl__head";
+      const l = document.createElement("span");
+      l.textContent = label;
+      head.append(l, window.BSPopup.dots());
+      boxEl.classList.add("ctl__box");
+      if (onOpen) {
+        boxEl.classList.add("is-clickable");
+        boxEl.setAttribute("role", "button");
+        boxEl.tabIndex = 0;
+        boxEl.addEventListener("click", () => onOpen(boxEl));
+        boxEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(boxEl); }
+        });
+      }
+      c.append(head, boxEl);
+      panel.appendChild(c);
+      return c;
     }
-    if (!changed) return;
-    e.preventDefault();
-    if (out) document.execCommand("insertText", false, out);
-  });
 
-  preview.style.setProperty("--ed-size", D.size + "px");
-  preview.style.setProperty("--ed-lh", D.lineHeight);
-  preview.style.setProperty("--ed-ls", D.letterSpacing + "em");
-  preview.style.textAlign = D.align;
+    /* --- variante / style ---
+       Une fonte peut avoir plusieurs VARIANTES (d'autres dessins,
+       ranges sous le meme nom) et, dans chacune, plusieurs styles.
+       Deux variantes ou plus : le premier menu liste les variantes et
+       chacune ouvre le sous-menu de ses styles. Sinon on liste
+       directement les styles. */
+    const variants = [...new Set(styles.map((x) => x.variant).filter(Boolean))];
+    const hasVariants = variants.length > 1;
+    const ctlLabel = hasVariants ? t("ed.variant") : (variants.length ? t("ed.style") : t("ed.family"));
 
-  /* un reglage = libelle pointille + selecteur en aplat gris.
-     Tous les reglages sont visibles en meme temps : un reglage,
-     un clic. */
-  function control(label, boxEl, onOpen) {
-    const c = document.createElement("div");
-    c.className = "ctl";
-    const head = document.createElement("div");
-    head.className = "ctl__head";
-    const l = document.createElement("span");
-    l.textContent = label;
-    head.append(l, window.BSPopup.dots());
-    boxEl.classList.add("ctl__box");
-    if (onOpen) {
-      boxEl.classList.add("is-clickable");
-      boxEl.setAttribute("role", "button");
-      boxEl.tabIndex = 0;
-      boxEl.addEventListener("click", () => onOpen(boxEl));
-      boxEl.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(boxEl); }
-      });
+    const famBox = document.createElement("div");
+    const famVal = document.createElement("span");
+    famVal.className = "ctl__text";
+    famBox.append(famVal, window.BSPopup.dots());
+
+    function famText() {
+      return styleLabel(font, activeStyle);
     }
-    c.append(head, boxEl);
-    panel.appendChild(c);
-    return c;
-  }
 
-  /* --- variante / style ---
-     Une fonte peut avoir plusieurs VARIANTES (d'autres dessins,
-     ranges sous le meme nom) et, dans chacune, plusieurs styles.
-     Deux variantes ou plus : le premier menu liste les variantes et
-     chacune ouvre le sous-menu de ses styles. Sinon on liste
-     directement les styles. */
-  const variants = [...new Set(styles.map((x) => x.variant).filter(Boolean))];
-  const hasVariants = variants.length > 1;
-  const ctlLabel = hasVariants ? t("ed.variant") : (variants.length ? t("ed.style") : t("ed.family"));
+    function pickStyle(st) {
+      activeStyle = st;
+      famVal.textContent = famText();
+      applyType();
+      /* le module de telechargement suit la graisse ouverte ici */
+      document.dispatchEvent(new CustomEvent("bs:style", { detail: { font: font, style: st } }));
+    }
 
-  const famBox = document.createElement("div");
-  const famVal = document.createElement("span");
-  famVal.className = "ctl__text";
-  famBox.append(famVal, window.BSPopup.dots());
-
-  function famText() {
-    return styleLabel(font, activeStyle);
-  }
-
-  function pickStyle(st) {
-    activeStyle = st;
     famVal.textContent = famText();
-    applyType();
-    /* le module de telechargement suit la graisse ouverte ici */
-    document.dispatchEvent(new CustomEvent("bs:style", { detail: { font: font, style: st } }));
-  }
+    control(ctlLabel, famBox, (anchor) => {
+      openStyleMenu({ anchor: anchor, font: font, current: activeStyle, onPick: pickStyle });
+    });
 
-  famVal.textContent = famText();
-  control(ctlLabel, famBox, (anchor) => {
-    openStyleMenu({ anchor: anchor, font: font, current: activeStyle, onPick: pickStyle });
-  });
+    /* --- sliders --- */
+    const sizeS = window.BSSlider.create({
+      min: 8, max: 200, step: 1, value: D.size,
+      format: (v) => String(Math.round(v)),
+      onInput: (v) => { preview.style.setProperty("--ed-size", Math.round(v) + "px"); queueCaret(); }
+    });
+    control(t("ed.size"), sizeS.el);
 
-  /* --- sliders --- */
-  const sizeS = window.BSSlider.create({
-    min: 8, max: 200, step: 1, value: D.size,
-    format: (v) => String(Math.round(v)),
-    onInput: (v) => { preview.style.setProperty("--ed-size", Math.round(v) + "px"); queueCaret(); }
-  });
-  control(t("ed.size"), sizeS.el);
+    /* Des que le corps est regle A LA MAIN, on arrete de le recalculer
+       tout seul : l'ouverture du tiroir ou un changement de largeur ne
+       doivent plus ecraser le choix de la personne. L'evenement "input"
+       de l'element n'arrive QUE sur une action reelle — sizeS.set()
+       ne le declenche pas. */
+    let sizeTouched = false;
+    sizeS.input.addEventListener("input", () => { sizeTouched = true; });
 
-  /* Des que le corps est regle A LA MAIN, on arrete de le recalculer
-     tout seul : l'ouverture du tiroir ou un changement de largeur ne
-     doivent plus ecraser le choix de la personne. L'evenement "input"
-     de l'element n'arrive QUE sur une action reelle — sizeS.set()
-     ne le declenche pas. */
-  let sizeTouched = false;
-  sizeS.input.addEventListener("input", () => { sizeTouched = true; });
+    const lhS = window.BSSlider.create({
+      min: 0.8, max: 2.6, step: 0.01, value: D.lineHeight,
+      format: (v) => v.toFixed(2),
+      onInput: (v) => { preview.style.setProperty("--ed-lh", v); queueCaret(); }
+    });
+    control(t("ed.lineHeight"), lhS.el);
 
-  const lhS = window.BSSlider.create({
-    min: 0.8, max: 2.6, step: 0.01, value: D.lineHeight,
-    format: (v) => v.toFixed(2),
-    onInput: (v) => { preview.style.setProperty("--ed-lh", v); queueCaret(); }
-  });
-  control(t("ed.lineHeight"), lhS.el);
+    const lsS = window.BSSlider.create({
+      min: -0.05, max: 0.5, step: 0.01, value: D.letterSpacing,
+      format: (v) => v.toFixed(2),
+      onInput: (v) => { preview.style.setProperty("--ed-ls", v + "em"); queueCaret(); }
+    });
+    control(t("ed.letterSpacing"), lsS.el);
 
-  const lsS = window.BSSlider.create({
-    min: -0.05, max: 0.5, step: 0.01, value: D.letterSpacing,
-    format: (v) => v.toFixed(2),
-    onInput: (v) => { preview.style.setProperty("--ed-ls", v + "em"); queueCaret(); }
-  });
-  control(t("ed.letterSpacing"), lsS.el);
+    /* --- couleurs : selecteur maison RGB / HSV / HEX --- */
+    const setters = [];   /* [setCouleurTexte, setCouleurFond] pour le bouton random */
 
-  /* --- couleurs : selecteur maison RGB / HSV / HEX --- */
-  const setters = [];   /* [setCouleurTexte, setCouleurFond] pour le bouton random */
+    function colorControl(label, initHex, apply) {
+      const box = document.createElement("div");
+      const val = document.createElement("span");
+      val.className = "ctl__text";
+      box.append(val, window.BSPopup.dots());
 
-  function colorControl(label, initHex, apply) {
-    const box = document.createElement("div");
-    const val = document.createElement("span");
-    val.className = "ctl__text";
-    box.append(val, window.BSPopup.dots());
+      let hex = noHash(initHex).toUpperCase();
+      let mode = "HEX";
+      const setHex = (v) => { hex = noHash(v).toUpperCase(); paint(); };
 
-    let hex = noHash(initHex).toUpperCase();
-    let mode = "HEX";
-    const setHex = (v) => { hex = noHash(v).toUpperCase(); paint(); };
-
-    function text() {
-      const [r, g, b] = hexToRgb(hex);
-      if (mode === "RGB") return pad3(r) + "," + pad3(g) + "," + pad3(b);
-      if (mode === "HSV") {
-        const [h, s, v] = rgbToHsv(r, g, b);
-        return pad3(h) + "," + pad3(s) + "," + pad3(v);
+      function text() {
+        const [r, g, b] = hexToRgb(hex);
+        if (mode === "RGB") return pad3(r) + "," + pad3(g) + "," + pad3(b);
+        if (mode === "HSV") {
+          const [h, s, v] = rgbToHsv(r, g, b);
+          return pad3(h) + "," + pad3(s) + "," + pad3(v);
+        }
+        return hex;
       }
-      return hex;
-    }
-    /* l'aplat du selecteur PREND la couleur choisie (via variables
-       CSS, pour que le survol vert puisse passer par-dessus) */
-    function paint() {
-      box.style.setProperty("--ctl-fill", withHash(hex));
-      box.style.setProperty("--ctl-ink", readableOn(hex));
-      val.textContent = text();
-      apply(withHash(hex));
-    }
-    paint();
+      /* l'aplat du selecteur PREND la couleur choisie (via variables
+         CSS, pour que le survol vert puisse passer par-dessus) */
+      function paint() {
+        box.style.setProperty("--ctl-fill", withHash(hex));
+        box.style.setProperty("--ctl-ink", readableOn(hex));
+        val.textContent = text();
+        apply(withHash(hex));
+      }
+      paint();
 
-    setters.push(setHex);
+      setters.push(setHex);
 
-    control(label, box, (anchor) => {
-      window.BSPopup.open({
-        anchor,
-        title: label,
-        className: "bs-popup--color",
-        build: (bd) => {
-          const sliders = [];
-          const rows = document.createElement("div");
-          rows.className = "cp__sliders";
-          bd.appendChild(rows);
+      control(label, box, (anchor) => {
+        window.BSPopup.open({
+          anchor,
+          title: label,
+          className: "bs-popup--color",
+          build: (bd) => {
+            const sliders = [];
+            const rows = document.createElement("div");
+            rows.className = "cp__sliders";
+            bd.appendChild(rows);
 
-          const AXES = {
-            RGB: [["red", 0, 255], ["green", 0, 255], ["blue", 0, 255]],
-            HSV: [["hue", 0, 360], ["saturation", 0, 100], ["value", 0, 100]]
-          };
-          let axisMode = "RGB";
+            const AXES = {
+              RGB: [["red", 0, 255], ["green", 0, 255], ["blue", 0, 255]],
+              HSV: [["hue", 0, 360], ["saturation", 0, 100], ["value", 0, 100]]
+            };
+            let axisMode = "RGB";
 
-          function currentAxisValues() {
-            const [r, g, b] = hexToRgb(hex);
-            return axisMode === "RGB" ? [r, g, b] : rgbToHsv(r, g, b);
-          }
+            function currentAxisValues() {
+              const [r, g, b] = hexToRgb(hex);
+              return axisMode === "RGB" ? [r, g, b] : rgbToHsv(r, g, b);
+            }
 
-          function fromSliders() {
-            const v = sliders.map((s) => s.get());
-            const rgb = axisMode === "RGB" ? v : hsvToRgb(v[0], v[1], v[2]);
-            hex = rgbToHex(rgb[0], rgb[1], rgb[2]);
-            paint();
+            function fromSliders() {
+              const v = sliders.map((s) => s.get());
+              const rgb = axisMode === "RGB" ? v : hsvToRgb(v[0], v[1], v[2]);
+              hex = rgbToHex(rgb[0], rgb[1], rgb[2]);
+              paint();
+              refreshFormats();
+            }
+
+            function buildAxes() {
+              rows.innerHTML = "";
+              sliders.length = 0;
+              const vals = currentAxisValues();
+              AXES[axisMode].forEach(([name, min, max], i) => {
+                const s = window.BSSlider.create({
+                  min, max, step: 1, value: vals[i], label: name,
+                  format: (v) => pad3(v),
+                  onInput: fromSliders
+                });
+                s.el.classList.add("cp__row");
+                sliders.push(s);
+                rows.appendChild(s.el);
+              });
+            }
+
+            const fmtWrap = document.createElement("div");
+            fmtWrap.className = "cp__formats";
+            bd.appendChild(fmtWrap);
+
+            function refreshFormats() {
+              fmtWrap.innerHTML = "";
+              ["RGB", "HSV", "HEX"].forEach((m) => {
+                const [r, g, b] = hexToRgb(hex);
+                let v;
+                if (m === "RGB") v = pad3(r) + "," + pad3(g) + "," + pad3(b);
+                else if (m === "HSV") { const t = rgbToHsv(r, g, b); v = pad3(t[0]) + "," + pad3(t[1]) + "," + pad3(t[2]); }
+                else v = hex;
+                const b2 = window.BSPopup.item(m, { selected: m === mode });
+                const out = document.createElement("span");
+                out.className = "cp__fmt-val";
+                out.textContent = v;
+                b2.appendChild(out);
+                b2.addEventListener("click", () => {
+                  mode = m;
+                  if (m !== "HEX") { axisMode = m; buildAxes(); }
+                  paint();
+                  refreshFormats();
+                });
+                fmtWrap.appendChild(b2);
+              });
+            }
+
+            buildAxes();
             refreshFormats();
           }
-
-          function buildAxes() {
-            rows.innerHTML = "";
-            sliders.length = 0;
-            const vals = currentAxisValues();
-            AXES[axisMode].forEach(([name, min, max], i) => {
-              const s = window.BSSlider.create({
-                min, max, step: 1, value: vals[i], label: name,
-                format: (v) => pad3(v),
-                onInput: fromSliders
-              });
-              s.el.classList.add("cp__row");
-              sliders.push(s);
-              rows.appendChild(s.el);
-            });
-          }
-
-          const fmtWrap = document.createElement("div");
-          fmtWrap.className = "cp__formats";
-          bd.appendChild(fmtWrap);
-
-          function refreshFormats() {
-            fmtWrap.innerHTML = "";
-            ["RGB", "HSV", "HEX"].forEach((m) => {
-              const [r, g, b] = hexToRgb(hex);
-              let v;
-              if (m === "RGB") v = pad3(r) + "," + pad3(g) + "," + pad3(b);
-              else if (m === "HSV") { const t = rgbToHsv(r, g, b); v = pad3(t[0]) + "," + pad3(t[1]) + "," + pad3(t[2]); }
-              else v = hex;
-              const b2 = window.BSPopup.item(m, { selected: m === mode });
-              const out = document.createElement("span");
-              out.className = "cp__fmt-val";
-              out.textContent = v;
-              b2.appendChild(out);
-              b2.addEventListener("click", () => {
-                mode = m;
-                if (m !== "HEX") { axisMode = m; buildAxes(); }
-                paint();
-                refreshFormats();
-              });
-              fmtWrap.appendChild(b2);
-            });
-          }
-
-          buildAxes();
-          refreshFormats();
-        }
+        });
       });
-    });
-  }
-  colorControl(t("ed.color"), D.color, (c) => (preview.style.color = c));
-  colorControl(t("ed.bg"), D.bg, (c) => (prevWrap.style.background = c));
+    }
+    colorControl(t("ed.color"), D.color, (c) => (preview.style.color = c));
+    colorControl(t("ed.bg"), D.bg, (c) => (prevWrap.style.background = c));
 
-  /* --- alignement + textes d'essai ---
-     Trois boutons de justification, puis 1 / 2 / 3 : un mot, une
-     ligne, un paragraphe, pris dans assets/js/samples.js (les memes
-     textes pour toutes les fontes). */
-  const alignRow = document.createElement("div");
-  alignRow.className = "editor__align";
+    /* --- alignement + textes d'essai ---
+       Trois boutons de justification, puis 1 / 2 / 3 : un mot, une
+       ligne, un paragraphe, pris dans assets/js/samples.js (les memes
+       textes pour toutes les fontes). */
+    const alignRow = document.createElement("div");
+    alignRow.className = "editor__align";
 
-  /* UN SEUL bouton, UNE seule zone cliquable : chaque clic passe a
-     la justification suivante (gauche, centre, droite, et on
-     recommence). Aucun filet entre les trois tiers — seul le pave
-     orange se deplace, et sa position EST l'alignement. */
-  const ALIGNS = ["left", "center", "right"];
+    /* UN SEUL bouton, UNE seule zone cliquable : chaque clic passe a
+       la justification suivante (gauche, centre, droite, et on
+       recommence). Aucun filet entre les trois tiers — seul le pave
+       orange se deplace, et sa position EST l'alignement. */
+    const ALIGNS = ["left", "center", "right"];
 
-  const justify = document.createElement("button");
-  justify.type = "button";
-  justify.className = "editor__justify";
-  justify.setAttribute("aria-label", t("ed.align"));
+    const justify = document.createElement("button");
+    justify.type = "button";
+    justify.className = "editor__justify";
+    justify.setAttribute("aria-label", t("ed.align"));
 
-  ALIGNS.forEach((a) => {
-    const seg = document.createElement("span");
-    seg.className = "editor__justify-seg";
-    seg.dataset.align = a;
-    for (let i = 0; i < 3; i += 1) seg.appendChild(document.createElement("i"));
-    justify.appendChild(seg);
-  });
-
-  let alignIndex = Math.max(0, ALIGNS.indexOf(D.align));
-
-  function setAlign(a) {
-    const i = ALIGNS.indexOf(a);
-    if (i >= 0) alignIndex = i;
-    justify.querySelectorAll(".is-active").forEach((x) => x.classList.remove("is-active"));
-    const seg = justify.querySelector('[data-align="' + ALIGNS[alignIndex] + '"]');
-    if (seg) seg.classList.add("is-active");
-    justify.title = t("ed.align") + " : " + ALIGNS[alignIndex];
-    preview.style.textAlign = ALIGNS[alignIndex];
-  }
-
-  justify.addEventListener("click", () => {
-    setAlign(ALIGNS[(alignIndex + 1) % ALIGNS.length]);
-  });
-
-  alignRow.appendChild(justify);
-  setAlign(ALIGNS[alignIndex]);
-
-  /* Pose un texte dans l'apercu : on remplace ce que la fonte ne
-     sait pas dessiner, puis on recale le corps. */
-  function setText(str) {
-    const txt = window.BSGlyph ? window.BSGlyph.filterText(str, activeStyle.cssFamily || font.cssFamily) : str;
-    preview.innerText = txt || str;
-    fitTextToWidth();
-    queueCaret();
-  }
-
-  [["words", "ed.sample1", "1"], ["lines", "ed.sample2", "2"], ["paragraphs", "ed.sample3", "3"]]
-    .forEach(([kind, key, label]) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.className = "editor__sample";
-      b.textContent = label;
-      b.title = t(key);
-      b.setAttribute("aria-label", t(key));
-      b.addEventListener("click", () => {
-        const txt = pickSample(kind);
-        if (txt) setText(txt);
-      });
-      alignRow.appendChild(b);
+    ALIGNS.forEach((a) => {
+      const seg = document.createElement("span");
+      seg.className = "editor__justify-seg";
+      seg.dataset.align = a;
+      for (let i = 0; i < 3; i += 1) seg.appendChild(document.createElement("i"));
+      justify.appendChild(seg);
     });
 
-  /* --- bouton RANDOM : rejoue tous les reglages d'un coup --- */
-  const randomBtn = document.createElement("button");
-  randomBtn.type = "button";
-  randomBtn.className = "editor__random";
-  randomBtn.textContent = t("ed.random");
-  randomBtn.addEventListener("click", () => {
-    const pair = randomPair();
-    setters[0](pair.color);
-    setters[1](pair.bg);
-    sizeS.set(Math.round(20 + Math.random() * 110));
-    lhS.set(+(0.9 + Math.random() * 1.4).toFixed(2));
-    lsS.set(+(-0.03 + Math.random() * 0.28).toFixed(2));
+    let alignIndex = Math.max(0, ALIGNS.indexOf(D.align));
 
-    pickStyle(styles[Math.floor(Math.random() * styles.length)]);
-
-    setAlign(["left", "center", "right"][Math.floor(Math.random() * 3)]);
-  });
-
-  panel.appendChild(alignRow);
-
-  /* --- TIROIR ---
-     Une colonne de boutons collee au bord gauche du module :
-     la poignee du tiroir (des fleches sur toute sa hauteur), puis
-     « voir » et « hasard », meme largeur, quelques pixels d'ecart.
-     Les libelles sont a la verticale, lettres l'une sur l'autre. */
-  let rail = null;
-  if (opts.drawer) {
-    body.classList.add("has-drawer");
-
-    rail = document.createElement("div");
-    rail.className = "editor__rail";
-
-    const handle = document.createElement("button");
-    handle.type = "button";
-    handle.className = "editor__drawer-toggle";
-    handle.setAttribute("aria-label", t("ed.drawerOpen"));
-    const arrows = document.createElement("span");
-    arrows.className = "editor__arrows";
-    handle.appendChild(arrows);
-
-    /* autant de fleches qu'il en faut pour remplir la hauteur */
-    function fillArrows() {
-      const glyph = body.classList.contains("is-drawer-open") ? "<" : ">";
-      const h = handle.clientHeight;
-      if (!h) return;
-      const probe = document.createElement("i");
-      probe.textContent = glyph;
-      arrows.innerHTML = "";
-      arrows.appendChild(probe);
-      const one = probe.getBoundingClientRect().height || 14;
-      const n = Math.max(1, Math.floor((h - 8) / one));
-      arrows.innerHTML = "";
-      for (let i = 0; i < n; i += 1) {
-        const a = document.createElement("i");
-        a.textContent = glyph;
-        arrows.appendChild(a);
-      }
+    function setAlign(a) {
+      const i = ALIGNS.indexOf(a);
+      if (i >= 0) alignIndex = i;
+      justify.querySelectorAll(".is-active").forEach((x) => x.classList.remove("is-active"));
+      const seg = justify.querySelector('[data-align="' + ALIGNS[alignIndex] + '"]');
+      if (seg) seg.classList.add("is-active");
+      justify.title = t("ed.align") + " : " + ALIGNS[alignIndex];
+      preview.style.textAlign = ALIGNS[alignIndex];
     }
 
-    handle.addEventListener("click", () => {
-      const open = body.classList.toggle("is-drawer-open");
-      handle.setAttribute("aria-label", t(open ? "ed.drawerClose" : "ed.drawerOpen"));
-      fillArrows();
-      setTimeout(fitTextToWidth, 320);
+    justify.addEventListener("click", () => {
+      setAlign(ALIGNS[(alignIndex + 1) % ALIGNS.length]);
     });
 
-    randomBtn.classList.add("editor__rail-btn");
-    rail.append(handle, randomBtn);
-    body.insertBefore(rail, panel);
+    alignRow.appendChild(justify);
+    setAlign(ALIGNS[alignIndex]);
 
-    fillArrows();
-    if (window.ResizeObserver) new ResizeObserver(fillArrows).observe(handle);
-    [0, 200, 600].forEach((d) => setTimeout(fillArrows, d));
-  } else {
-    alignRow.appendChild(randomBtn);   /* a droite des boutons */
-  }
+    /* Pose un texte dans l'apercu : on remplace ce que la fonte ne
+       sait pas dessiner, puis on recale le corps. */
+    function setText(str) {
+      const txt = window.BSGlyph ? window.BSGlyph.filterText(str, activeStyle.cssFamily || font.cssFamily) : str;
+      preview.innerText = txt || str;
+      fitTextToWidth();
+      queueCaret();
+    }
 
-  /* --- corps de depart ---
-     Sous 10 mots, le texte doit tenir sur UNE ligne et remplir la
-     largeur de l'apercu. Au-dela, on garde le corps regle. */
-  function fitTextToWidth() {
-    if (sizeTouched) return;              /* corps choisi a la main */
-    const txt = preview.innerText.trim();
-    if (!txt) return;
-    if (txt.split(/\s+/).filter(Boolean).length >= 10) return;
+    [["words", "ed.sample1", "1"], ["lines", "ed.sample2", "2"], ["paragraphs", "ed.sample3", "3"]]
+      .forEach(([kind, key, label]) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "editor__sample";
+        b.textContent = label;
+        b.title = t(key);
+        b.setAttribute("aria-label", t(key));
+        b.addEventListener("click", () => {
+          const txt = pickSample(kind);
+          if (txt) setText(txt);
+        });
+        alignRow.appendChild(b);
+      });
 
-    const box = prevWrap.clientWidth;
-    if (!box) return;
-    const cs = getComputedStyle(preview);
-    const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
-    const avail = box - pad;
-    if (avail <= 0) return;
+    /* --- bouton RANDOM : rejoue tous les reglages d'un coup --- */
+    const randomBtn = document.createElement("button");
+    randomBtn.type = "button";
+    randomBtn.className = "editor__random";
+    randomBtn.textContent = t("ed.random");
+    randomBtn.addEventListener("click", () => {
+      const pair = randomPair();
+      setters[0](pair.color);
+      setters[1](pair.bg);
+      sizeS.set(Math.round(20 + Math.random() * 110));
+      lhS.set(+(0.9 + Math.random() * 1.4).toFixed(2));
+      lsS.set(+(-0.03 + Math.random() * 0.28).toFixed(2));
 
-    try {
-      if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
-      const S = 100;
-      measureCtx.font =
-        (activeStyle.style === "italic" ? "italic " : "") +
-        (activeStyle.weight || 400) + " " + S + "px '" +
-        (activeStyle.cssFamily || font.cssFamily) + "'";
-      const w = measureCtx.measureText(txt.split(/\n/)[0]).width;
-      if (!w) return;
-      /* l'interlettrage s'ajoute a la chasse */
-      const ls = parseFloat(cs.letterSpacing) || 0;
-      const total = w + (ls / (parseFloat(cs.fontSize) || S)) * S * txt.length;
-      /* 2 % de marge : sans ca le texte touche le bord et passe
-         a la ligne au moindre arrondi */
-      const size = Math.max(8, Math.min(200, (avail / total) * S * 0.98));
-      sizeS.set(Math.round(size));
-    } catch (_e) {}
-  }
+      pickStyle(styles[Math.floor(Math.random() * styles.length)]);
 
-  applyType();
+      setAlign(["left", "center", "right"][Math.floor(Math.random() * 3)]);
+    });
+
+    panel.appendChild(alignRow);
+
+    /* --- TIROIR ---
+       Une colonne de boutons collee au bord gauche du module :
+       la poignee du tiroir (des fleches sur toute sa hauteur), puis
+       « voir » et « hasard », meme largeur, quelques pixels d'ecart.
+       Les libelles sont a la verticale, lettres l'une sur l'autre. */
+    let rail = null;
+    if (opts.drawer) {
+      body.classList.add("has-drawer");
+
+      rail = document.createElement("div");
+      rail.className = "editor__rail";
+
+      const handle = document.createElement("button");
+      handle.type = "button";
+      handle.className = "editor__drawer-toggle";
+      handle.setAttribute("aria-label", t("ed.drawerOpen"));
+      const arrows = document.createElement("span");
+      arrows.className = "editor__arrows";
+      handle.appendChild(arrows);
+
+      /* autant de fleches qu'il en faut pour remplir la hauteur */
+      function fillArrows() {
+        const glyph = body.classList.contains("is-drawer-open") ? "<" : ">";
+        const h = handle.clientHeight;
+        if (!h) return;
+        const probe = document.createElement("i");
+        probe.textContent = glyph;
+        arrows.innerHTML = "";
+        arrows.appendChild(probe);
+        const one = probe.getBoundingClientRect().height || 14;
+        const n = Math.max(1, Math.floor((h - 8) / one));
+        arrows.innerHTML = "";
+        for (let i = 0; i < n; i += 1) {
+          const a = document.createElement("i");
+          a.textContent = glyph;
+          arrows.appendChild(a);
+        }
+      }
+
+      handle.addEventListener("click", () => {
+        const open = body.classList.toggle("is-drawer-open");
+        handle.setAttribute("aria-label", t(open ? "ed.drawerClose" : "ed.drawerOpen"));
+        fillArrows();
+        setTimeout(fitTextToWidth, 320);
+      });
+
+      randomBtn.classList.add("editor__rail-btn");
+      rail.append(handle, randomBtn);
+      body.insertBefore(rail, panel);
+
+      fillArrows();
+      if (window.ResizeObserver) new ResizeObserver(aLImageSuivante(fillArrows)).observe(handle);
+      [0, 200, 600].forEach((d) => setTimeout(fillArrows, d));
+    } else {
+      alignRow.appendChild(randomBtn);   /* a droite des boutons */
+    }
+
+    /* --- corps de depart ---
+       Sous 10 mots, le texte doit tenir sur UNE ligne et remplir la
+       largeur de l'apercu. Au-dela, on garde le corps regle. */
+    function fitTextToWidth() {
+      if (sizeTouched) return;              /* corps choisi a la main */
+      const txt = preview.innerText.trim();
+      if (!txt) return;
+      if (txt.split(/\s+/).filter(Boolean).length >= 10) return;
+
+      const box = prevWrap.clientWidth;
+      if (!box) return;
+      const cs = getComputedStyle(preview);
+      const pad = (parseFloat(cs.paddingLeft) || 0) + (parseFloat(cs.paddingRight) || 0);
+      const avail = box - pad;
+      if (avail <= 0) return;
+
+      try {
+        if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
+        const S = 100;
+        measureCtx.font =
+          (activeStyle.style === "italic" ? "italic " : "") +
+          (activeStyle.weight || 400) + " " + S + "px '" +
+          (activeStyle.cssFamily || font.cssFamily) + "'";
+        const w = measureCtx.measureText(txt.split(/\n/)[0]).width;
+        if (!w) return;
+        /* l'interlettrage s'ajoute a la chasse */
+        const ls = parseFloat(cs.letterSpacing) || 0;
+        const total = w + (ls / (parseFloat(cs.fontSize) || S)) * S * txt.length;
+        /* 2 % de marge : sans ca le texte touche le bord et passe
+           a la ligne au moindre arrondi */
+        const size = Math.max(8, Math.min(200, (avail / total) * S * 0.98));
+        sizeS.set(Math.round(size));
+      } catch (_e) {}
+    }
+
+    applyType();
 
     /* ---- curseur : remplace celui du systeme ----
        Le vrai curseur est masque (caret-color: transparent, voir
@@ -784,7 +795,7 @@ window.BSEditor = (function () {
     document.addEventListener("selectionchange", () => {
       if (document.activeElement === preview) queueCaret();
     });
-    if (window.ResizeObserver) new ResizeObserver(queueCaret).observe(prevWrap);
+    if (window.ResizeObserver) new ResizeObserver(aLImageSuivante(queueCaret)).observe(prevWrap);
     document.fonts.ready.then(queueCaret);
     /* La premiere pose tombe avant que la mise en page soit stable
        (fonte pas encore chargee, largeurs pas encore resolues) : on
@@ -798,7 +809,7 @@ window.BSEditor = (function () {
     [80, 350, 900].forEach((d) => setTimeout(fitTextToWidth, d));
     window.addEventListener("resize", fitTextToWidth);
     /* le tiroir change la largeur de l'apercu : on recale */
-    if (window.ResizeObserver) new ResizeObserver(fitTextToWidth).observe(prevWrap);
+    if (window.ResizeObserver) new ResizeObserver(aLImageSuivante(fitTextToWidth)).observe(prevWrap);
 
     const api = {
       el: body,

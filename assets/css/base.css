@@ -36,6 +36,18 @@ a {
   text-decoration: none;
 }
 
+/* iPhone en mode economie d'energie : les videos ne demarrent pas
+   seules, et Safari pose alors un gros bouton « lecture » par-dessus.
+   Nos videos sont des decors, jamais des films a lancer : on le
+   retire. La video montre son image d'attente (poster) a la place. */
+video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+  -webkit-appearance: none;
+}
+video::-webkit-media-controls {
+  display: none !important;
+}
+
 img {
   max-width: 100%;
   display: block;
@@ -48,28 +60,52 @@ img {
 /* L'opacite est pilotee IMAGE PAR IMAGE par idle-glitch.js : le
    fondu d'entree dure quatre secondes, la sortie est immediate.
    Pas de transition CSS ici, elle se battrait avec le calcul. */
-/* PAS de 100vw / 100vh ici. Sur telephone, 100vh vaut la hauteur de
-   l'ecran BARRE D'ADRESSE CACHEE : la toile etait donc plus haute
-   que ce qu'on voit, et la photo de la page s'y retrouvait etiree et
-   decalee — « l'effet change l'aspect et n'est pas au meme endroit
-   que le site ». inset: 0 suffit, et colle a ce qui est affiche. */
-.bs-glitch {
+/* TOUT L'ECRAN, VRAIMENT : les trois voiles plein ecran (effet,
+   logo, chargement) partent du haut et font 100lvh — la hauteur de
+   l'ecran barre d'adresse repliee.
+   Sur telephone ils descendent encore 80 px plus bas. Sur iPhone
+   (iOS 26) la page continue SOUS la barre d'outils flottante de
+   Safari, plus bas que 100lvh : mesure sur un iPhone 16e, 58 px
+   barre repliee, 98 px depliee. Avec inset: 0 le voile s'arretait
+   au-dessus, et on voyait la page nue en dessous — pendant le
+   chargement comme pendant l'effet. Ce qui depasse de l'ecran ne
+   se voit pas et ne coute rien.
+   La photo de l'effet est prise a la taille MESUREE du voile
+   (idle-glitch.js) : jamais etiree, jamais decalee. */
+.bs-glitch,
+.bs-glitch-logo,
+.bs-boot {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100vh;
+  height: 100lvh;
+}
+
+@media (pointer: coarse) {
+  .bs-glitch,
+  .bs-glitch-logo,
+  .bs-boot {
+    height: calc(100vh + 80px);
+    height: calc(100lvh + 80px);
+  }
+}
+
+.bs-glitch {
   z-index: 90;
   opacity: 0;
   pointer-events: none;
   overflow: hidden;
 }
 
-/* La toile p5 est dessinee en plus petit que l'ecran puis
-   agrandie : gros grain assume, et trois fois moins de pixels a
-   calculer. « pixelated » garde les carres nets au lieu de les
-   flouter. */
+/* La toile est dessinee en plus petit que l'ecran puis agrandie :
+   gros grain assume, et deux fois moins de pixels a calculer.
+   « pixelated » garde les carres nets au lieu de les flouter. */
 .bs-glitch canvas {
   display: block;
-  width: 100% !important;
-  height: 100% !important;
+  width: 100%;
+  height: 100%;
   image-rendering: pixelated;
 }
 
@@ -81,8 +117,6 @@ img {
    Voir assets/js/glitch-logo.js.
    ============================================================ */
 .bs-glitch-logo {
-  position: fixed;
-  inset: 0;
   z-index: 91;
   pointer-events: none;
   overflow: hidden;
@@ -130,8 +164,6 @@ img {
    milieu, son fond vert detoure.
    ============================================================ */
 .bs-boot {
-  position: fixed;
-  inset: 0;
   z-index: 998;
   background: var(--color-bg);
   display: flex;
@@ -193,8 +225,13 @@ html.bs-charge body {
    PIED DE PAGE (assets/js/footer.js)
    ------------------------------------------------------------
    Le meme sur toutes les pages. Fond clair, BS.type en grand, la
-   ligne orange, la mention de fondation en bas — et la photo calee
-   en bas a droite, qui deborde du cadre.
+   ligne orange, la mention de fondation en bas — et la photo du
+   pied, calee a droite sur TOUTE la hauteur : son haut touche le
+   haut du fond clair, son bas le bas de la page.
+   C'est le texte qui donne sa hauteur au pied de page ; la photo
+   est hors du flux et s'y adapte, sa largeur suivant ses
+   proportions. Le texte est borne en largeur : les deux ne se
+   recouvrent jamais.
    ============================================================ */
 .bs-pied {
   position: relative;
@@ -202,12 +239,6 @@ html.bs-charge body {
   background: var(--color-text);
   color: var(--color-dark);
   display: block;
-  /* hauteur minimum : de quoi voir le pied en entier meme quand le
-     texte est court */
-  min-height: clamp(280px, 40vh, 460px);
-  /* La hauteur du pied, c'est celle de la PHOTO : elle touche le
-     haut du fond clair et le bas de la page. Plus de bande vide. */
-  min-height: 0;
   /* aucune marge en haut : c'est la photo qui touche le haut du
      fond clair. Le texte porte sa propre marge. */
   padding: 0 var(--page-margin);
@@ -257,19 +288,7 @@ html.bs-charge body {
   text-transform: uppercase;
 }
 
-/* La photo est calee sur le bas du cadre et debordE a droite :
-   c'est le pied qui sort du pied de page. « contain » garde ses
-   proportions, jamais d'ecrasement. */
-/* La photo n'est PLUS posee par-dessus : c'est elle qui donne sa
-   hauteur au pied de page. Elle est dans le flux, calee a droite,
-   et son haut touche le haut du fond clair comme son bas touche le
-   bas de la page. */
-/* La photo est POSEE sur toute la hauteur du pied : son haut touche
-   le haut du fond clair, son bas le bas de la page. Elle est hors du
-   flux, donc c'est le texte qui donne sa hauteur au pied — et la
-   photo s'y adapte, largeur calculee d'apres ses proportions.
-   Le texte, lui, est borne a 56 % de la largeur : les deux ne se
-   recouvrent jamais. */
+/* « contain » garde ses proportions : jamais d'ecrasement. */
 .bs-pied__photo {
   position: absolute;
   top: 0;
@@ -285,10 +304,6 @@ html.bs-charge body {
   pointer-events: none;
 }
 
-/* Format etroit : plus de superposition du tout. Le texte occupe
-   toute la largeur, la photo se range EN DESSOUS, calee a droite. */
-/* Format etroit : le texte prend toute la largeur, la photo se range
-   dessous, calee a droite. */
 /* Format etroit : MEME dessin que sur grand ecran — le texte a
    gauche, le pied a droite sur toute la hauteur. Les empiler
    allongeait le bas de page pour rien. Seules les proportions
@@ -389,38 +404,17 @@ html.bs-charge body {
   color: var(--color-dark);
 }
 
-/* ---- Bouton pilule "VIEW FONT" / "DOWNLOAD" ---- */
-.btn-pill {
-  display: inline-block;
-  background: var(--color-text);
-  color: var(--color-dark);
-  font-family: var(--font-ui);
-  font-size: 0.65rem;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 5px 16px;
-  border-radius: var(--radius-pill);
-  border: none;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.btn-pill:hover {
-  background: var(--color-lime);
-}
-
 /* ============================================================
-   COMPOSANTS PARTAGÉS — slider custom + menu déroulant custom
+   COMPOSANTS PARTAGÉS — le slider custom
    ------------------------------------------------------------
-   Utilisés à la fois sur la home (render-home.js) et sur les
-   pages spécimen (render-grid.js). Un seul style, un seul JS
-   (assets/js/dropdown.js, assets/js/slider.js).
+   Utilisé à la fois sur la home et sur les pages spécimen. Un seul
+   style, un seul JS (assets/js/slider.js).
    ============================================================ */
 
 /* ---- Slider custom (thème BS.type) --------------------------
    Piste = filet pointillé, marqueur = petit rectangle orange
    vertical. La valeur (nombre ou mot) s'affiche à côté, câblée
-   en JS (assets/js/slider.js : BSSlider.init / BSSlider.create). */
+   en JS (assets/js/slider.js : BSSlider.create). */
 .slider {
   -webkit-appearance: none;
   appearance: none;
@@ -479,80 +473,6 @@ html.bs-charge body {
   box-shadow: 0 0 0 3px var(--color-select-bg-strong);
 }
 
-/* ---- Zone sélectionnable (typo, graisse, type de case…) ----
-   Fond vert acide de la charte au survol/à l'ouverture. */
-.bs-select-zone {
-  border-radius: 4px;
-  transition: background 0.12s ease;
-}
-
-.bs-select-zone:hover,
-.bs-select-zone.is-open {
-  background: var(--color-select-bg);
-}
-
-/* ---- Menu déroulant custom (pastille) ---- */
-.bs-dropdown {
-  position: relative;
-  display: inline-block;
-}
-
-.bs-dropdown__trigger {
-  font-family: var(--font-ui);
-  font-size: inherit;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  background: transparent;
-  color: var(--color-text);
-  border: none;
-  cursor: pointer;
-  padding: 0;
-}
-
-.bs-dropdown__trigger::after {
-  content: " ⌄";
-  font-size: 0.9em;
-}
-
-.bs-dropdown__menu {
-  display: none;
-  position: absolute;
-  top: calc(100% + 6px);
-  left: 0;
-  min-width: 160px;
-  background: var(--color-bg);
-  border: 1px solid var(--color-line);
-  border-radius: 6px;
-  overflow: hidden;
-  list-style: none;
-  padding: 4px;
-  z-index: 20;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
-}
-
-.bs-dropdown.is-open .bs-dropdown__menu {
-  display: block;
-}
-
-.bs-dropdown__menu li {
-  font-family: var(--font-ui);
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  padding: 6px 10px;
-  border-radius: 4px;
-  cursor: pointer;
-  color: var(--color-text);
-}
-
-.bs-dropdown__menu li:hover {
-  background: var(--color-select-bg-strong);
-}
-
-.bs-dropdown__menu li.is-selected {
-  color: var(--color-lime);
-}
-
 /* ============================================================
    VIGNETTE VIDEO (bas droite, sur toutes les pages)
    ------------------------------------------------------------
@@ -563,8 +483,8 @@ html.bs-charge body {
    --enter (0 -> 1, pose en JS) : 0 en haut de page, la vignette
    est hors champ sous le bord bas et pivotee ; 1 des qu'on a
    defile, elle est calee dans le coin. L'enveloppe porte cette
-   entree, le canvas porte la rotation d'inactivite : deux
-   transforms separees, sinon elles s'annulent.
+   entree, .bs-face__bob porte le balancement : deux transforms
+   separees, sinon elles s'annulent.
    ============================================================ */
 .bs-face {
   position: fixed;
@@ -604,9 +524,6 @@ html.bs-charge body {
   width: 100%;
   height: auto;
 }
-
-/* La vignette ne tourne plus au repos : la rotation d'inactivite a
-   ete retiree. Il ne reste que le balancement (.bs-face__bob). */
 
 @media (prefers-reduced-motion: reduce) {
   .bs-face { transform: none; }
@@ -795,6 +712,11 @@ html.bs-charge body {
     left: var(--page-margin);
     width: auto;
     bottom: calc(var(--page-margin) + var(--face-w) * 0.62);
+    /* jamais plus haute que ce qui reste au-dessus de la tete, barre
+       d'adresse du telephone comprise (svh) : sinon le haut de la
+       bulle, avec son bouton de fermeture, sortait de l'ecran */
+    max-height: calc(100vh - var(--page-margin) * 3 - var(--face-w) * 0.62);
+    max-height: calc(100svh - var(--page-margin) * 3 - var(--face-w) * 0.62);
   }
   .about::after { display: none; }
 }
@@ -858,12 +780,8 @@ html.bs-charge body {
     inset: -16px -14px;
   }
 
-  /* Les cases du jeu de caracteres : 28 pixels mesures sur un
-     telephone, c'est trop petit pour viser un glyphe. On les
-     agrandit — il y en a moins par ligne, mais on peut les toucher.
-     Elles sont cote a cote : pas de zone invisible ici, elle
-     mordrait sur la voisine. */
-  .cs__grid {
-    --cs-cell: 40px;
-  }
+  /* Les cases du jeu de caracteres sont cote a cote : pas de zone
+     invisible ici, elle mordrait sur la voisine. Elles sont plutot
+     agrandies a 40 px minimum — c'est render-grid.js (sizeGrid) qui
+     le fait, la taille y est calculee. */
 }

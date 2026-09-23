@@ -3,13 +3,18 @@ VIDÉO DE FOND DE LA LANDING PAGE
 
 Fichiers :
   - landbg.mp4          → vidéo affichée (H.264, sans son, boucle)
-  - landbg-poster.jpg    → image affichée pendant le chargement
+  - landbg-poster.jpg    → image affichée pendant le chargement, et à la
+                           place de la vidéo quand le téléphone est en
+                           mode économie d'énergie
 
 REMPLACER LA VIDÉO :
   1. Déposer le nouveau fichier ici sous le nom "landbg.mp4"
      (ou changer le chemin dans index.html, balise <video>).
-  2. Générer une nouvelle image poster (optionnel) :
-       ffmpeg -y -i landbg.mp4 -vframes 1 -q:v 2 landbg-poster.jpg
+  2. Refaire l'image d'attente (sinon l'ancienne s'affiche le temps
+     du chargement) :
+       ffmpeg -y -i landbg.mp4 -vframes 1 -vf "scale=640:-2,format=gray" -q:v 12 landbg-poster.jpg
+     (format=gray : la vidéo actuelle est en noir et blanc ; à retirer
+     pour une vidéo en couleur)
 
 RECOMMANDATIONS TECHNIQUES :
   - Format H.264 (.mp4), pas de son (fichier plus léger).

@@ -215,18 +215,26 @@
   });
 
   /* Sur l'accueil seulement : le film doit etre decode pour pouvoir
-     montrer sa derniere image. */
+     montrer sa derniere image. Ses deux secondes comptent a partir
+     du moment ou il est DEMANDE (glitch-logo.js, en bas de page),
+     pas de l'arrivee de ce script-ci. */
   let filmPret = false;
   const film = accueil ? attendre((ok) => {
-    const voir = () => {
-      if (!window.BSLogoGlitch || !window.BSLogoGlitch.pret) return false;
-      filmPret = true;
-      window.BSLogoGlitch.figer();        /* le logo entier, fige */
-      return true;
-    };
-    if (voir()) { ok(); return; }
-    const t = setInterval(() => { if (voir()) { clearInterval(t); ok(); } }, 80);
-    setTimeout(() => { clearInterval(t); ok(); }, ATTENTE_FILM);
+    let depuis = 0;
+    const t = setInterval(() => {
+      const logo = window.BSLogoGlitch;
+      if (logo && logo.pret) {
+        filmPret = true;
+        logo.figer();                     /* le logo entier, fige */
+        clearInterval(t);
+        ok();
+        return;
+      }
+      if (!depuis && logo && logo.demande) depuis = performance.now();
+      if (depuis && performance.now() - depuis > ATTENTE_FILM) { clearInterval(t); ok(); }
+    }, 80);
+    /* filet : pas de film du tout (script absent, WebGL refuse...) */
+    setTimeout(() => { clearInterval(t); ok(); }, ATTENTE_FILM + 2500);
   }) : Promise.resolve();
 
   const minimum = new Promise((ok) => setTimeout(ok, MINIMUM));

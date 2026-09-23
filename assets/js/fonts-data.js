@@ -6,12 +6,12 @@
 
    • AJOUTER UNE FONTE :
      1. Déposer le .otf/.ttf dans assets/fonts/
-     2. Ajouter un @font-face dans assets/css/fonts.css
-     3. Copier un bloc { ... } ci-dessous et remplir les champs
-     4. Dupliquer un dossier fonts/<slug>/ (copier fonts/_template.html
-        vers fonts/<slug>/index.html, y régler window.BS_SLUG)
-     5. Déposer les médias dans fonts/<slug>/media/ puis lancer
-        node scripts/generate-media-manifest.js
+     2. Double-cliquer Maj.command : il crée le bloc de la fonte
+        ci-dessous, sa règle dans fonts.css et sa page fonts/<slug>/
+     3. Compléter ici ce qu'il ne peut pas deviner (catégorie,
+        textes « info »...)
+     4. Déposer les médias dans fonts/<slug>/media/ et relancer
+        Maj.command
 
    • CHAMPS PRINCIPAUX :
      slug, name, variant, category, designer, year

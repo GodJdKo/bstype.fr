@@ -1,9 +1,0 @@
-/* ============================================================
-   LAYOUT.CSS — inutilisé
-   ------------------------------------------------------------
-   Les pages spécimen n'ont plus de header/display top-level
-   (voir specimen.css + grid.css : tout vit dans les zones de la
-   grille, chaque case pose sa propre font-family en JS). Fichier
-   gardé vide pour ne pas casser un lien existant ; peut être
-   supprimé avec son <link> dans les pages fonts/*/index.html.
-   ============================================================ */

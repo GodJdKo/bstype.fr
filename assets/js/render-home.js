@@ -126,8 +126,19 @@
     }
 
     placePills();
-    /* la hauteur du titre change avec la largeur de la fenetre */
-    window.addEventListener("resize", placePills);
+    /* La hauteur du titre change avec la LARGEUR de la fenetre.
+       PIEGE TELEPHONE : la barre d'adresse qui se replie en plein
+       defilement change la hauteur de la fenetre, et chaque fois les
+       pastilles etaient retirees au sort — elles sautaient partout
+       pendant qu'on faisait defiler. On ne reagit donc qu'a un
+       changement de largeur. */
+    let largeurPastilles = document.documentElement.clientWidth;
+    window.addEventListener("resize", () => {
+      const l = document.documentElement.clientWidth;
+      if (l === largeurPastilles) return;
+      largeurPastilles = l;
+      placePills();
+    });
     window.addEventListener("load", placePills);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(placePills);
   }

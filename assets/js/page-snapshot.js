@@ -310,6 +310,138 @@ window.BSSnapshot = (function () {
     }
   }
 
+  /* ---------- les unites d'ecran ----------
+     PIEGE A NE PLUS REFAIRE, c'etait LA cause du decalage sur
+     telephone : dans l'image SVG, 100vh, 100svh, 16vw... se
+     calculent sur la taille de L'IMAGE, pas sur celle de l'ecran.
+     Sur iPhone l'image est plus haute que la fenetre (elle passe
+     sous la barre d'outils de Safari) : le hero de la photo etait
+     plus haut que le vrai, et tout ce qui suivait descendait de
+     40 a 120 px. Meme chose pour les elements fixes (la tete en
+     bas a droite), poses depuis le bas de l'image.
+     On repere donc, une fois pour toutes, les regles de style qui
+     dependent de la taille de l'ecran — directement, ou par une
+     variable CSS qui en depend — et on recopie sur la copie la
+     valeur MESUREE sur la page. Recopier une valeur calculee est
+     sans risque : c'est exactement celle que la page utilise. */
+  const UNITE_ECRAN = /\d(?:s|l|d)?v(?:h|w|min|max|i|b)\b/;
+  const DEVELOPPE = {
+    padding: ["padding-top", "padding-right", "padding-bottom", "padding-left"],
+    margin: ["margin-top", "margin-right", "margin-bottom", "margin-left"],
+    inset: ["top", "right", "bottom", "left"],
+    gap: ["row-gap", "column-gap"],
+    font: ["font-size", "line-height"],
+    flex: ["flex-basis"],
+    "border-width": ["border-top-width", "border-right-width", "border-bottom-width", "border-left-width"]
+  };
+  let reglesEcran = null;
+
+  function toutesLesRegles() {
+    const out = [];
+    const marcher = (liste) => {
+      for (const r of liste) {
+        if (r.style && r.selectorText) out.push(r);
+        else if (r.cssRules) { try { marcher(r.cssRules); } catch (_e) {} }
+      }
+    };
+    for (const feuille of document.styleSheets) {
+      try { marcher(feuille.cssRules || []); } catch (_e) {}
+    }
+    return out;
+  }
+
+  function trouverReglesEcran() {
+    if (reglesEcran) return reglesEcran;
+    const regles = toutesLesRegles();
+    /* 1. les variables CSS qui dependent de l'ecran, en cascade :
+          --a: 2vw ; --b: calc(var(--a) * 2) -> les deux */
+    const variables = new Set();
+    let encore = true;
+    const depend = (v) => UNITE_ECRAN.test(v) ||
+      Array.from(variables).some((n) => v.indexOf("var(" + n) >= 0);
+    while (encore) {
+      encore = false;
+      regles.forEach((r) => {
+        for (let i = 0; i < r.style.length; i += 1) {
+          const nom = r.style[i];
+          if (nom.indexOf("--") !== 0 || variables.has(nom)) continue;
+          if (depend(r.style.getPropertyValue(nom))) { variables.add(nom); encore = true; }
+        }
+      });
+    }
+    /* 2. les declarations ordinaires qui en dependent */
+    const liste = [];
+    regles.forEach((r) => {
+      if (/::?(before|after|marker|placeholder|selection)/.test(r.selectorText)) return;
+      const props = [];
+      for (let i = 0; i < r.style.length; i += 1) {
+        const nom = r.style[i];
+        if (nom.indexOf("--") === 0) continue;
+        if (depend(r.style.getPropertyValue(nom))) props.push(nom);
+      }
+      if (props.length) liste.push({ selecteur: r.selectorText, props: props });
+    });
+    reglesEcran = liste;
+    return liste;
+  }
+
+  function figerEcran(source, copie) {
+    /* la copie vient d'etre faite : meme arbre, meme ordre */
+    const vrais = [source].concat(Array.from(source.querySelectorAll("*")));
+    const copies = [copie].concat(Array.from(copie.querySelectorAll("*")));
+    if (vrais.length !== copies.length) return;
+    const index = new Map();
+    vrais.forEach((el, i) => index.set(el, i));
+    const styles = new Map();
+    const style = (el) => {
+      if (!styles.has(el)) styles.set(el, getComputedStyle(el));
+      return styles.get(el);
+    };
+
+    trouverReglesEcran().forEach((r) => {
+      let trouves;
+      try { trouves = source.querySelectorAll(r.selecteur); } catch (_e) { return; }
+      trouves.forEach((el) => {
+        const cl = copies[index.get(el)];
+        if (!cl) return;
+        const cs = style(el);
+        r.props.forEach((p) => {
+          (DEVELOPPE[p] || [p]).forEach((q) => {
+            const v = cs.getPropertyValue(q);
+            if (v) cl.style.setProperty(q, v);
+          });
+        });
+      });
+    });
+
+    vrais.forEach((el, i) => {
+      if (el.nodeType !== 1) return;
+      const cs = style(el);
+      const cl = copies[i];
+
+      /* Ce qui est ANIME (la derive des pastilles, le balancement de
+         la tete) est photographie a l'endroit ou il EST, pas au
+         debut de son animation : sans ca une pastille sautait de
+         vingt pixels au demarrage de l'effet. */
+      if (el.getAnimations && el.getAnimations().length) {
+        cl.style.setProperty("animation", "none");
+        cl.style.setProperty("transform", cs.transform);
+        cl.style.setProperty("opacity", cs.opacity);
+      }
+
+      /* Les elements FIXES sont poses depuis le haut, a la position
+         mesuree : un « bottom: 16px » se compterait depuis le bas de
+         l'image, pas depuis celui de l'ecran. */
+      if (cs.position !== "fixed") return;
+      cl.style.setProperty("top", cs.top);
+      cl.style.setProperty("left", cs.left);
+      cl.style.setProperty("bottom", "auto");
+      cl.style.setProperty("right", "auto");
+      cl.style.setProperty("width", cs.width);
+      cl.style.setProperty("height", cs.height);
+    });
+  }
+
   /* Les commentaires du HTML doivent partir : l'image SVG est lue
      en XML strict, et un simple « -- » dans un commentaire (on en
      ecrit tout le temps) fait echouer TOUTE la lecture. */
@@ -343,6 +475,7 @@ window.BSSnapshot = (function () {
 
     return construireCssFontes().then((css) => {
       const copie = document.documentElement.cloneNode(true);
+      figerEcran(document.documentElement, copie);
       figerImages(document.documentElement, copie);
       remplacerMedias(document.documentElement, copie);
       figerSliders(document.documentElement, copie);

@@ -6,7 +6,6 @@
    position (c'est le "thumb" de l'input range, la piste est
    invisible). Style : assets/css/specimen.css.
 
-   BSSlider.init(inputEl)            -> juste la barre (home)
    BSSlider.create({ min, max, step, value, label, format,
                      onInput })      -> { el, input, set, get }
      label absent : [valeur][points][marqueur]      (editeur)
@@ -20,15 +19,6 @@ window.BSSlider = {
     const val = parseFloat(input.value);
     const pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
     input.style.setProperty("--range-progress", pct + "%");
-  },
-
-  init(input) {
-    if (!input) return input;
-    input.classList.add("slider");
-    const update = () => this._progress(input);
-    input.addEventListener("input", update);
-    update();
-    return input;
   },
 
   create({ min, max, step, value, label, format, onInput, ariaLabel }) {

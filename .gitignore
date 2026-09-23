@@ -1,2 +1,7 @@
 _originaux/
 .DS_Store
+# Fichiers de travail : ils restent sur l'ordinateur, pas sur le site
+*.prproj
+Adobe Premiere Pro Auto-Save/
+# Fontes retirees du catalogue (voir fonts/_corbeille/LISEZ-MOI.txt)
+fonts/_corbeille/

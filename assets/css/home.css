@@ -2,14 +2,20 @@
    HOME.CSS — STYLES DE LA PAGE D'ACCUEIL
    ------------------------------------------------------------
    Sections : hero (pastilles + titre), catalogue de fontes,
-   "Fonts in use", footer.
+   "Fonts in use". Le pied de page est commun (base.css).
    ============================================================ */
 
 /* ---------------- HERO ---------------- */
 
+/* 100svh : la hauteur de l'ecran QUAND la barre d'adresse est
+   visible — c'est l'etat au chargement. Avec 100vh (barre repliee)
+   le bas du hero, donc le titre et le sous-titre, glissait sous la
+   barre d'outils du telephone. La premiere ligne sert aux
+   navigateurs qui ne connaissent pas svh. */
 .hero {
   position: relative;
   min-height: calc(100vh - 52px);
+  min-height: calc(100svh - 52px);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -86,8 +92,6 @@
 @media (prefers-reduced-motion: reduce) {
   .pill { animation: none; }
 }
-
-
 
 /* bande noire pleine largeur derriere le nom : elle deborde des
    marges de la page pour toucher les deux bords */
@@ -350,7 +354,6 @@
   margin-right: var(--space-2);
 }
 
-
 @media (prefers-reduced-motion: reduce) {
   .font-row .editor__panel { transition: none; }
 }
@@ -600,37 +603,13 @@
   .inuse-bubble { display: none; }   /* pas de survol sur mobile */
 }
 
-/* ---------------- FOOTER ---------------- */
-
-.footer {
-  background: var(--color-text);
-  color: var(--color-dark);
-  min-height: 55vh;
-  padding: var(--space-4) var(--page-margin);
-}
-
-.footer__title {
-  font-family: var(--font-ui);
-  font-weight: normal;
-  font-size: var(--text-footer);
-  line-height: 0.95;
-}
-
-.footer__note {
-  margin-top: var(--space-3);
-  font-size: var(--text-meta);
-  text-transform: uppercase;
-}
-
 /* ---------------- RESPONSIVE ---------------- */
 
 @media (max-width: 720px) {
   /* Les pastilles restent DISPERSEES et derivent, comme sur grand
-     ecran. Les mettre en flux normal les rangeait en colonne, ce qui
-     n'est plus la page d'accueil du site. placePills (render-home.js)
-     tient compte de la largeur : sur un telephone il retombe tout
-     seul sur une ou deux colonnes de cases, et tire une position au
-     hasard DANS chaque case. */
+     ecran. placePills (render-home.js) tient compte de la largeur :
+     sur un telephone il retombe tout seul sur une ou deux colonnes
+     de cases, et tire une position au hasard DANS chaque case. */
 
   /* Le bloc du titre REMONTE, et la zone des pastilles se reduit
      d'autant : placePills mesure le haut du titre, donc il n'y a
@@ -645,41 +624,52 @@
   }
 
   /* ---- L'EDITEUR DE L'ACCUEIL : le modele des pages de fonte ----
-     Les reglages sortaient par la GAUCHE, en colonne etroite. Ils
-     s'ouvrent maintenant PAR LE HAUT, sur toute la largeur, ranges
+     Les reglages s'ouvrent PAR LE HAUT, sur toute la largeur, ranges
      trois par ligne — comme dans le module editeur d'une page de
-     fonte.
-     Le module passe en COLONNE : reglages, puis rangee de boutons,
-     puis zone de texte. En ligne avec retour a la ligne, la seconde
-     ligne se retrouvait ecrasee a zero. */
+     fonte. Le module passe en COLONNE : reglages, puis rangee de
+     boutons, puis zone de texte.
+     DEUX PIEGES, notes pour ne pas y retomber :
+       - la hauteur imposee est sur .bs-editor, pas sur .font-row :
+         c'est elle qu'il faut lever ;
+       - le panneau porte height: 100% dans la regle de base, ce qui
+         vaut ZERO des que le module n'a plus de hauteur imposee :
+         height: auto est obligatoire. */
   .font-row .bs-editor {
     display: flex;
     flex-direction: column;
+    flex-wrap: wrap;
+    /* les lignes se suivent par le haut : sans ca la zone de texte
+       se retrouvait ecrasee a zero */
+    align-content: flex-start;
+    height: auto;
+  }
+
+  .font-row:has(.bs-editor.is-drawer-open) {
     height: auto;
   }
 
   .font-row .editor__panel {
     order: -1;                 /* au-dessus de tout le reste */
+    flex: 0 0 100%;
     width: 100%;
-    /* height: auto obligatoire : la regle de base pose height: 100%,
-       qui vaut ZERO des que le module n'a plus de hauteur imposee. */
     height: auto;
     max-height: 0;
-    flex: 0 0 auto;
     margin: 0;
     padding: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease, margin 0.3s ease;
+    transition: max-height 0.26s ease, margin 0.26s ease;
   }
 
+  /* flex et width redits ici : la regle de base du tiroir ouvert
+     est plus precise que celle du dessus, elle l'emporterait */
   .font-row .bs-editor.is-drawer-open .editor__panel {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-content: start;
     gap: 7px 6px;
+    flex: 0 0 100%;
     width: 100%;
-    height: auto;
-    max-height: 70vh;
+    max-height: 60vh;
     margin: 0 0 var(--space-2);
     overflow-y: auto;
   }
@@ -706,18 +696,14 @@
     min-height: 34px;
   }
 
-  .font-row .editor__rail-btn {
-    width: auto;
-    flex: 0 0 auto;
-    padding: 0 12px;
-  }
-
   /* Les libelles sont a la verticale dans la colonne de gauche ;
      dans une rangee ils se lisent normalement. */
   .font-row .editor__rail-btn {
+    width: auto;
+    flex: 0 0 auto;
+    padding: 8px 14px;
     writing-mode: horizontal-tb;
     text-orientation: mixed;
-    padding: 8px 14px;
   }
 
   /* les fleches de la poignee pointent vers le bas, cote a cote */
@@ -728,94 +714,10 @@
   .font-row .editor__preview {
     width: 100%;
     height: auto;
-    flex: 1 1 auto;
+    flex: 1 1 0;
     min-height: clamp(130px, 20vh, 240px);
     max-height: 48vh;
     overflow: auto;
-  }
-
-  .hero {
-    padding-bottom: clamp(34px, 11vh, 110px);
-  }
-
-  /* et le noir derriere le titre monte plus haut que lui */
-  .hero__title::before {
-    top: calc(-1 * clamp(16px, 4vh, 40px));
-  }
-
-  /* ---- L'EDITEUR DE L'ACCUEIL : le modele des pages de fonte ----
-     Les reglages sortaient par la GAUCHE, en colonne etroite. Ils
-     s'ouvrent maintenant PAR LE HAUT, sur toute la largeur, et sont
-     ranges trois par ligne — exactement comme dans le module editeur
-     d'une page de fonte. */
-  .font-row .bs-editor {
-    flex-wrap: wrap;
-    /* les deux lignes se suivent par le haut : sans ca la seconde
-       (la zone de texte) se retrouvait ecrasee a zero */
-    align-content: flex-start;
-  }
-
-  /* Reglages ouverts : le module s'allonge pour les accueillir, au
-     lieu de rogner la zone de texte. La hauteur imposee est sur
-     .bs-editor, pas sur .font-row — c'est elle qu'il faut lever. */
-  .font-row .bs-editor.is-drawer-open {
-    height: auto;
-  }
-  .font-row:has(.bs-editor.is-drawer-open) {
-    height: auto;
-  }
-
-  .font-row .editor__preview {
-    flex: 1 1 0;
-    min-height: clamp(130px, 20vh, 240px);
-  }
-
-  .font-row .editor__panel {
-    order: -1;                 /* au-dessus de la zone de texte */
-    flex: 0 0 100%;
-    width: 100%;
-    /* height: auto obligatoire : la regle de base pose height: 100%,
-       qui vaut ZERO des que le module n'a plus de hauteur imposee. */
-    height: auto;
-    max-height: 0;
-    margin: 0;
-    overflow: hidden;
-    transition: max-height 0.26s ease, margin 0.26s ease;
-  }
-
-  .font-row .bs-editor.is-drawer-open .editor__panel {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    align-content: start;
-    gap: 7px 6px;
-    flex: 0 0 100%;
-    width: 100%;
-    height: auto;
-    max-height: 60vh;
-    margin: 0 0 var(--space-2);
-    overflow-y: auto;
-  }
-
-  .font-row .bs-editor.is-drawer-open .editor__panel .editor__align {
-    grid-column: 1 / -1;
-  }
-
-  .font-row .editor__panel .ctl .dots {
-    display: none;
-  }
-
-  .hero {
-    justify-content: flex-end;
-  }
-
-  .font-row__controls {
-    flex-wrap: wrap;
-    gap: var(--space-2);
-  }
-
-  .font-row__demo {
-    white-space: normal;
-    word-break: break-word;
   }
 
   .in-use__head,

@@ -36,9 +36,12 @@
    Le logo (assets/js/glitch-logo.js) se joue PAR-DESSUS, sur sa
    propre toile : il n'est pas abime par l'effet.
 
-   Ecrit avec p5.js (assets/vendor/p5.min.js), garde en local.
-   A SAVOIR : p5 ne sait pas photographier la page — aucun
-   navigateur ne le sait. C'est page-snapshot.js qui s'en charge.
+   Aucune bibliotheque : un canvas, un tableau de pixels et un
+   petit bruit de Perlin ecrit plus bas. (La premiere version
+   tournait avec p5.js : 1 Mo charge sur chaque page pour trois
+   fonctions. Meme effet, meme reglages, sans le poids.)
+   A SAVOIR : aucun navigateur ne sait photographier la page.
+   C'est page-snapshot.js qui s'en charge.
 
    REGLAGES GENERAUX (les bornes du tirage sont plus bas, dans
    tirerReglages) :
@@ -56,7 +59,6 @@
 
 (function () {
   if (window.BS_NO_GLITCH) return;
-  if (typeof p5 === "undefined") return;
   if (!window.BSSnapshot) return;
   if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
@@ -211,6 +213,12 @@
   ombre.className = "bs-glitch__ombre";
   hote.appendChild(ombre);
 
+  /* La toile, dessinee plus petite que l'ecran puis agrandie en
+     CSS, sans lissage (voir .bs-glitch canvas dans base.css). */
+  const toile = document.createElement("canvas");
+  hote.appendChild(toile);
+  const ctx = toile.getContext("2d");
+
   let photo = null;
   let enCours = false;
   let force = 0;
@@ -218,7 +226,6 @@
   let minuteur = 0;
   let minuteurLogo = 0;
   let depuisSommeil = 0;     /* instant ou l'effet a ete lance */
-  let croquis = null;
   let opacite = 0;           /* fondu, pilote image par image */
   let avancee = 0;           /* temps passe en sommeil, en secondes */
   let fige = false;
@@ -263,360 +270,438 @@
   }
 
   /* ============================================================
-     LE SKETCH p5
+     LE BRUIT
+     ------------------------------------------------------------
+     Un bruit de Perlin « a valeurs » : une grille de nombres tires
+     au hasard, lissee entre les noeuds, sur quatre octaves (chaque
+     octave deux fois plus fine et deux fois plus faible que la
+     precedente). Resultat entre 0 et 1, qui varie doucement : c'est
+     lui qui donne aux coulures leur sens et leur longueur.
      ============================================================ */
-  function sketch(p) {
-    let posee = false;     /* la photo est-elle deja en place ? */
-    let marcheX = 0;
-    let marcheY = 0;
-
-    /* ---- dans quel ordre ranger les tranches ? ----
-       Pas 0, 1, 2, 3... : on verrait une ligne descendre
-       regulierement en travers de l'ecran, facon rafraichissement
-       de minitel. On tire au contraire un ORDRE MELANGE : chaque
-       ligne (ou colonne) y passe une fois et une seule par tour,
-       mais jamais dans l'ordre. Le rangement se depose donc comme
-       du bruit, et non comme un balayage. */
-    let ordre = null;
-    let ordreI = 0;
-    let ordrePour = -1;
-
-    function melanger(n) {
-      ordre = new Uint32Array(n);
-      for (let i = 0; i < n; i += 1) ordre[i] = i;
-      for (let i = n - 1; i > 0; i -= 1) {
+  const bruit = (function () {
+    const ordre = new Uint8Array(512);
+    const valeurs = new Float32Array(256);
+    let seme = false;
+    /* la grille n'est tiree qu'au premier usage : rien a faire au
+       chargement de la page */
+    function semer() {
+      seme = true;
+      for (let i = 0; i < 256; i += 1) { ordre[i] = i; valeurs[i] = Math.random(); }
+      for (let i = 255; i > 0; i -= 1) {
         const j = Math.floor(Math.random() * (i + 1));
         const t = ordre[i]; ordre[i] = ordre[j]; ordre[j] = t;
       }
-      ordrePour = n;
-      ordreI = 0;
+      for (let i = 0; i < 256; i += 1) ordre[i + 256] = ordre[i];
     }
 
-    function trancheSuivante(n) {
-      if (ordrePour !== n || ordreI >= n) melanger(n);
-      return ordre[ordreI++];
+    const noeud = (x, y, z) => valeurs[ordre[ordre[ordre[x & 255] + (y & 255)] + (z & 255)]];
+    /* lissage en cosinus : pas d'angle aux noeuds de la grille */
+    const lisse = (t) => 0.5 - 0.5 * Math.cos(t * Math.PI);
+    const mixe = (a, b, t) => a + (b - a) * t;
+
+    function octave(x, y, z) {
+      const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z);
+      const fx = lisse(x - xi), fy = lisse(y - yi), fz = lisse(z - zi);
+      const a = mixe(noeud(xi, yi, zi), noeud(xi + 1, yi, zi), fx);
+      const b = mixe(noeud(xi, yi + 1, zi), noeud(xi + 1, yi + 1, zi), fx);
+      const c = mixe(noeud(xi, yi, zi + 1), noeud(xi + 1, yi, zi + 1), fx);
+      const d = mixe(noeud(xi, yi + 1, zi + 1), noeud(xi + 1, yi + 1, zi + 1), fx);
+      return mixe(mixe(a, b, fy), mixe(c, d, fy), fz);
     }
 
-    p.setup = function () {
-      p.pixelDensity(1);
-      const e = echelle();
-      const c = p.createCanvas(Math.round(largeur() * e), Math.round(hauteur() * e));
-      c.parent(hote);
-      p.frameRate(CADENCE);
-      p.noSmooth();
-      p.noLoop();
+    return function (x, y, z) {
+      if (!seme) semer();
+      let somme = 0;
+      let poids = 0.5;
+      let finesse = 1;
+      for (let o = 0; o < 4; o += 1) {
+        somme += octave(x * finesse, y * finesse, z * finesse) * poids;
+        poids *= 0.5;
+        finesse *= 2;
+      }
+      return somme;
     };
+  })();
 
-    /* ---- ou frotter ? ----
-       Une page de fonte est surtout noire : prendre des points au
-       hasard reviendrait a barbouiller du noir sur du noir, et on
-       ne verrait rien. On repere donc une fois pour toutes les
-       endroits CONTRASTES de la photo, et on y va plus souvent —
-       sans jamais s'interdire le reste de la page. */
-    const GX = 40, GY = 24;
-    let cumul = new Float64Array(GX * GY);
-    let total = 0;
+  /* ============================================================
+     LA TOILE ET SES PIXELS
+     ------------------------------------------------------------
+     La photo est posee UNE fois sur la toile, puis lue UNE fois :
+     ensuite on ne travaille plus que dans ce tableau de pixels, et
+     on le renvoie a l'ecran a chaque image. Jamais on ne relit la
+     toile — relire des pixels oblige la carte graphique a rendre
+     la main, c'est l'operation la plus chere de toutes.
+     ============================================================ */
+  let W = 0;
+  let H = 0;
+  let image = null;          /* les pixels travailles */
+  let posee = false;         /* la photo est-elle deja en place ? */
+  let marcheX = 0;
+  let marcheY = 0;
 
-    function reperer() {
-      total = 0;
-      p.loadPixels();
-      const d = p.pixels;
-      const W = p.width, H = p.height;
-      const cw = W / GX, ch = H / GY;
-      for (let gy = 0; gy < GY; gy += 1) {
-        for (let gx = 0; gx < GX; gx += 1) {
-          let mn = 255, mx = 0;
-          /* quelques sondages suffisent a savoir si ca bouge */
-          for (let k = 0; k < 12; k += 1) {
-            const x = Math.min(W - 1, Math.floor((gx + (k % 4) / 4) * cw));
-            const y = Math.min(H - 1, Math.floor((gy + Math.floor(k / 4) / 3) * ch));
-            const i = (y * W + x) * 4;
-            const l = (d[i] + d[i + 1] + d[i + 2]) / 3;
-            if (l < mn) mn = l;
-            if (l > mx) mx = l;
-          }
-          /* + 6 : meme une case plate garde une petite chance */
-          total += (mx - mn) + 6;
-          cumul[gy * GX + gx] = total;
+  /* Met la toile a la taille de son hote. Rappelee a chaque mise en
+     veille : sur telephone la hauteur visible change avec la barre
+     d'adresse, sans toujours prevenir. */
+  function tailler() {
+    const e = echelle();
+    const w = Math.max(1, Math.round(largeur() * e));
+    const h = Math.max(1, Math.round(hauteur() * e));
+    if (w === W && h === H) return;
+    toile.width = W = w;
+    toile.height = H = h;
+    image = null;
+    posee = false;
+  }
+
+  /* ---- dans quel ordre ranger les tranches ? ----
+     Pas 0, 1, 2, 3... : on verrait une ligne descendre
+     regulierement en travers de l'ecran, facon rafraichissement de
+     minitel. On tire au contraire un ORDRE MELANGE : chaque ligne
+     (ou colonne) y passe une fois et une seule par tour, mais
+     jamais dans l'ordre. Le rangement se depose donc comme du
+     bruit, et non comme un balayage. */
+  let ordre = null;
+  let ordreI = 0;
+  let ordrePour = -1;
+
+  function melanger(n) {
+    ordre = new Uint32Array(n);
+    for (let i = 0; i < n; i += 1) ordre[i] = i;
+    for (let i = n - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const t = ordre[i]; ordre[i] = ordre[j]; ordre[j] = t;
+    }
+    ordrePour = n;
+    ordreI = 0;
+  }
+
+  function trancheSuivante(n) {
+    if (ordrePour !== n || ordreI >= n) melanger(n);
+    return ordre[ordreI++];
+  }
+
+  /* ---- ou frotter ? ----
+     Une page de fonte est surtout noire : prendre des points au
+     hasard reviendrait a barbouiller du noir sur du noir, et on ne
+     verrait rien. On repere donc une fois pour toutes les endroits
+     CONTRASTES de la photo, et on y va plus souvent — sans jamais
+     s'interdire le reste de la page. */
+  const GX = 40, GY = 24;
+  const cumul = new Float64Array(GX * GY);
+  let total = 0;
+
+  function reperer(d) {
+    total = 0;
+    const cw = W / GX, ch = H / GY;
+    for (let gy = 0; gy < GY; gy += 1) {
+      for (let gx = 0; gx < GX; gx += 1) {
+        let mn = 255, mx = 0;
+        /* quelques sondages suffisent a savoir si ca bouge */
+        for (let k = 0; k < 12; k += 1) {
+          const x = Math.min(W - 1, Math.floor((gx + (k % 4) / 4) * cw));
+          const y = Math.min(H - 1, Math.floor((gy + Math.floor(k / 4) / 3) * ch));
+          const i = (y * W + x) * 4;
+          const l = (d[i] + d[i + 1] + d[i + 2]) / 3;
+          if (l < mn) mn = l;
+          if (l > mx) mx = l;
         }
+        /* + 6 : meme une case plate garde une petite chance */
+        total += (mx - mn) + 6;
+        cumul[gy * GX + gx] = total;
       }
     }
+  }
 
-    /* un point tire selon la carte des contrastes */
-    function tirerPoint(hors) {
-      const W = p.width, H = p.height;
-      if (!total) return [Math.random() * (W - hors), Math.random() * (H - hors)];
-      const v = Math.random() * total;
-      let lo = 0, hi = cumul.length - 1;
-      while (lo < hi) {
-        const mid = (lo + hi) >> 1;
-        if (cumul[mid] < v) lo = mid + 1; else hi = mid;
-      }
-      const gx = lo % GX, gy = Math.floor(lo / GX);
-      const cw = W / GX, ch = H / GY;
-      return [
-        Math.min(W - hors - 1, Math.max(0, (gx + Math.random()) * cw)),
-        Math.min(H - hors - 1, Math.max(0, (gy + Math.random()) * ch))
-      ];
+  /* un point tire selon la carte des contrastes */
+  function tirerPoint(hors) {
+    if (!total) return [Math.random() * (W - hors), Math.random() * (H - hors)];
+    const v = Math.random() * total;
+    let lo = 0, hi = cumul.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (cumul[mid] < v) lo = mid + 1; else hi = mid;
     }
+    const gx = lo % GX, gy = Math.floor(lo / GX);
+    const cw = W / GX, ch = H / GY;
+    return [
+      Math.min(W - hors - 1, Math.max(0, (gx + Math.random()) * cw)),
+      Math.min(H - hors - 1, Math.max(0, (gy + Math.random()) * ch))
+    ];
+  }
 
-    function poserPhoto() {
-      p.drawingContext.imageSmoothingEnabled = false;
-      p.drawingContext.drawImage(photo, 0, 0, p.width, p.height);
-      posee = true;
-      ordrePour = -1;
-      marcheX = Math.floor(p.width / 2);
-      marcheY = Math.floor(p.height / 2);
-      reperer();
-    }
+  function poserPhoto() {
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(photo, 0, 0, W, H);
+    image = ctx.getImageData(0, 0, W, H);
+    posee = true;
+    ordrePour = -1;
+    marcheX = Math.floor(W / 2);
+    marcheY = Math.floor(H / 2);
+    reperer(image.data);
+  }
 
-    /* ---------- 1. le barbouillage ----------
-       On deplace les carres DANS LE TABLEAU DE PIXELS, pas avec
-       drawImage. Recopier la toile sur elle-meme obligeait la carte
-       graphique a rendre la main a chaque carre : mesure a 0,2 ms
-       piece, soit 18,7 ms pour 83 carres — a elle seule, presque
-       toute l'image. Ici on deplace des octets : c'est le meme
-       geste, cent fois moins cher, et ca partage la seule lecture
-       de pixels de l'image avec le rangement. */
-    function barbouiller(d, f, t) {
-      const W = p.width, H = p.height;
-      const s = Math.max(2, Math.round(R.taille));
-      const n = Math.round(R.nombre * f);
-      const pas = R.pas * f;
-      const octets = s * 4;
+  /* ---------- 1. le barbouillage ----------
+     On deplace les carres DANS LE TABLEAU DE PIXELS, pas avec
+     drawImage. Recopier la toile sur elle-meme obligeait la carte
+     graphique a rendre la main a chaque carre : mesure a 0,2 ms
+     piece, soit 18,7 ms pour 83 carres — a elle seule, presque
+     toute l'image. Ici on deplace des octets : c'est le meme geste,
+     cent fois moins cher. */
+  function barbouiller(d, f, t) {
+    const s = Math.max(2, Math.round(R.taille));
+    const n = Math.round(R.nombre * f);
+    const pas = R.pas * f;
+    const octets = s * 4;
 
-      for (let i = 0; i < n; i += 1) {
-        /* trois fois sur quatre on vise une zone contrastee ;
-           la quatrieme, n'importe ou, pour que tout y passe */
-        const pt = Math.random() < 0.75
-          ? tirerPoint(s)
-          : [Math.random() * (W - s), Math.random() * (H - s)];
-        const x = pt[0];
-        const y = pt[1];
+    for (let i = 0; i < n; i += 1) {
+      /* trois fois sur quatre on vise une zone contrastee ; la
+         quatrieme, n'importe ou, pour que tout y passe */
+      const pt = Math.random() < 0.75
+        ? tirerPoint(s)
+        : [Math.random() * (W - s), Math.random() * (H - s)];
+      const x = pt[0];
+      const y = pt[1];
 
-        /* bruit etire : deux tirages decales pour X et Y */
-        const nx = p.noise(x * R.bruitX, y * R.bruitY, t * R.vitesse) * 2 - 1;
-        const ny = p.noise(x * R.bruitX + 137, y * R.bruitY + 137, t * R.vitesse) * 2 - 1;
+      /* bruit etire : deux tirages decales pour X et Y */
+      const nx = bruit(x * R.bruitX, y * R.bruitY, t * R.vitesse) * 2 - 1;
+      const ny = bruit(x * R.bruitX + 137, y * R.bruitY + 137, t * R.vitesse) * 2 - 1;
 
-        /* le decalage suit surtout le sens d'etirement du bruit */
-        let dx = nx * pas;
-        let dy = ny * pas;
-        if (R.sens === "H") dy *= 1 - R.biais;
-        else dx *= 1 - R.biais;
+      /* le decalage suit surtout le sens d'etirement du bruit */
+      let dx = nx * pas;
+      let dy = ny * pas;
+      if (R.sens === "H") dy *= 1 - R.biais;
+      else dx *= 1 - R.biais;
 
-        const sx = Math.max(0, Math.min(W - s, Math.round(x)));
-        const sy = Math.max(0, Math.min(H - s, Math.round(y)));
-        const tx = Math.max(0, Math.min(W - s, Math.round(x + dx)));
-        const ty = Math.max(0, Math.min(H - s, Math.round(y + dy)));
-        if (sx === tx && sy === ty) continue;
+      const sx = Math.max(0, Math.min(W - s, Math.round(x)));
+      const sy = Math.max(0, Math.min(H - s, Math.round(y)));
+      const tx = Math.max(0, Math.min(W - s, Math.round(x + dx)));
+      const ty = Math.max(0, Math.min(H - s, Math.round(y + dy)));
+      if (sx === tx && sy === ty) continue;
 
-        /* Quand depart et arrivee se chevauchent, on parcourt les
-           lignes du bon cote : sinon on recopierait ce qu'on vient
-           d'ecrire et le carre partirait en trainee. */
-        if (ty > sy) {
-          for (let r = s - 1; r >= 0; r -= 1) {
-            const de = ((sy + r) * W + sx) * 4;
-            d.copyWithin(((ty + r) * W + tx) * 4, de, de + octets);
-          }
-        } else {
-          for (let r = 0; r < s; r += 1) {
-            const de = ((sy + r) * W + sx) * 4;
-            d.copyWithin(((ty + r) * W + tx) * 4, de, de + octets);
-          }
-        }
-      }
-    }
-
-    /* ---------- 2. le rangement des pixels ---------- */
-    const luminosite = (r, g, b) => (r + r + b + g + g + g) / 6;
-
-    function teinte(r, g, b) {
-      const mn = Math.min(r, g, b);
-      const mx = Math.max(r, g, b);
-      if (mn === mx) return 0;
-      let h;
-      if (mx === r) h = (g - b) / (mx - mn);
-      else if (mx === g) h = 2 + (b - r) / (mx - mn);
-      else h = 4 + (r - g) / (mx - mn);
-      h *= 60;
-      return h < 0 ? h + 360 : h;
-    }
-
-    function saturation(r, g, b) {
-      const mn = Math.min(r, g, b);
-      const mx = Math.max(r, g, b);
-      const l = luminosite(r, g, b);
-      if (mx === mn) return 0;
-      return l <= 127.5 ? (mx - mn) / (mx + mn) : (mx - mn) / (510 - mx - mn);
-    }
-
-    function clef(r, g, b) {
-      switch (R.triPar) {
-        case "R": return r;
-        case "G": return g;
-        case "B": return b;
-        case "H": return teinte(r, g, b);
-        case "S": return saturation(r, g, b) * 255;
-        default: return luminosite(r, g, b);
-      }
-    }
-
-    /* tampons reutilises : trier ne doit rien allouer */
-    let pix = new Uint32Array(0);
-    let cles = new Float64Array(0);
-    let rang = new Uint32Array(0);
-
-    function reserver(n) {
-      if (pix.length >= n) return;
-      pix = new Uint32Array(n);
-      cles = new Float64Array(n);
-      rang = new Uint32Array(n);
-    }
-
-    /* Longueur d'une suite. Ponderee : plus le premier pixel est
-       clair (ou sombre si « contre »), plus la suite est longue. */
-    function longueurSuite(d, idx, mini, maxi) {
-      if (R.triPondere === "N" || R.triPar === "F") {
-        return Math.round(mini + Math.random() * (maxi - mini));
-      }
-      let c = clef(d[idx], d[idx + 1], d[idx + 2]);
-      if (R.triPar === "H") c = (c / 360) * 255;
-      if (R.triPondere === "A") c = 255 - c;
-      return Math.round(mini + (Math.max(0, Math.min(255, c)) / 255) * (maxi - mini));
-    }
-
-    /* Range une suite de n pixels. pas = ecart entre deux pixels
-       dans le tableau (4 en horizontal, 4*largeur en vertical). */
-    function rangerSuite(d, depart, n, pas) {
-      if (n < 3) return;
-      if (R.triPar === "F") {
-        for (let i = 0; i < n >> 1; i += 1) {
-          const a = depart + i * pas;
-          const b = depart + (n - 1 - i) * pas;
-          for (let k = 0; k < 3; k += 1) {
-            const tmp = d[a + k]; d[a + k] = d[b + k]; d[b + k] = tmp;
-          }
-        }
-        return;
-      }
-      reserver(n);
-      for (let i = 0; i < n; i += 1) {
-        const j = depart + i * pas;
-        pix[i] = (d[j] << 16) | (d[j + 1] << 8) | d[j + 2];
-        cles[i] = clef(d[j], d[j + 1], d[j + 2]);
-        rang[i] = i;
-      }
-      const vue = rang.subarray(0, n);
-      Array.prototype.sort.call(vue, (a, b) => cles[a] - cles[b]);
-      for (let i = 0; i < n; i += 1) {
-        const c = pix[vue[R.triInverse ? n - 1 - i : i]];
-        const j = depart + i * pas;
-        d[j] = (c >> 16) & 255;
-        d[j + 1] = (c >> 8) & 255;
-        d[j + 2] = c & 255;
-      }
-    }
-
-    function ranger(d, f) {
-      const W = p.width, H = p.height;
-      /* les suites s'allongent avec le temps : le rangement
-         s'etire au lieu de tomber d'un coup */
-      /* La longueur des suites depend du desordre ET du temps
-         ecoule : plus on reste sans rien faire, plus le rangement
-         va loin. Borne a la taille de l'image. */
-      const etirement = 1 + avancee * R.triCroissance * 0.12;
-      const plafond = R.triSens === "H" ? W : H;
-      const maxi = Math.max(3, Math.min(plafond - 1, Math.round(R.triMax * f * etirement)));
-      const mini = Math.max(2, Math.min(maxi - 1, Math.round(R.triMin * f)));
-      const tranches = Math.max(1, Math.round(R.triParImage * f));
-
-      if (R.triSens === "V") {
-        for (let c = 0; c < tranches; c += 1) {
-          const col = trancheSuivante(W);
-          let y = 0;
-          while (y < H) {
-            let n = longueurSuite(d, (y * W + col) * 4, mini, maxi);
-            if (y + n >= H) n = H - y;
-            rangerSuite(d, (y * W + col) * 4, n, W * 4);
-            y += Math.max(1, n);
-          }
-        }
-      } else if (R.triSens === "H") {
-        for (let c = 0; c < tranches; c += 1) {
-          const lig = trancheSuivante(H);
-          let x = 0;
-          while (x < W) {
-            let n = longueurSuite(d, (lig * W + x) * 4, mini, maxi);
-            if (x + n >= W) n = W - x;
-            rangerSuite(d, (lig * W + x) * 4, n, 4);
-            x += Math.max(1, n);
-          }
+      /* Quand depart et arrivee se chevauchent, on parcourt les
+         lignes du bon cote : sinon on recopierait ce qu'on vient
+         d'ecrire et le carre partirait en trainee. */
+      if (ty > sy) {
+        for (let r = s - 1; r >= 0; r -= 1) {
+          const de = ((sy + r) * W + sx) * 4;
+          d.copyWithin(((ty + r) * W + tx) * 4, de, de + octets);
         }
       } else {
-        /* le marcheur : il erre et range derriere lui */
-        for (let c = 0; c < tranches * 2; c += 1) {
-          const horizontal = Math.random() < 0.5;
-          let n = longueurSuite(d, (marcheY * W + marcheX) * 4, mini, maxi);
-          if (horizontal) {
-            if (marcheX + n >= W) n = W - marcheX - 1;
-            if (n > 2) rangerSuite(d, (marcheY * W + marcheX) * 4, n, 4);
-            marcheX += Math.random() < 0.5 ? n : -n;
-          } else {
-            if (marcheY + n >= H) n = H - marcheY - 1;
-            if (n > 2) rangerSuite(d, (marcheY * W + marcheX) * 4, n, W * 4);
-            marcheY += Math.random() < 0.5 ? n : -n;
-          }
-          marcheX = Math.max(0, Math.min(W - 2, marcheX));
-          marcheY = Math.max(0, Math.min(H - 2, marcheY));
+        for (let r = 0; r < s; r += 1) {
+          const de = ((sy + r) * W + sx) * 4;
+          d.copyWithin(((ty + r) * W + tx) * 4, de, de + octets);
         }
       }
     }
+  }
 
-    p.draw = function () {
-      const dt = Math.min(140, p.deltaTime || 1000 / CADENCE);
+  /* ---------- 2. le rangement des pixels ---------- */
+  const luminosite = (r, g, b) => (r + r + b + g + g + g) / 6;
 
-      if (!fige) {
-        if (cible === 1) {
-          /* le desordre monte, et le fondu de la page vers l'effet
-             prend ses quatre secondes */
-          force = Math.min(1, force + dt / MONTEE);
-          poserOpacite(opacite + dt / FONDU);
-        } else {
-          /* on a repris la main : on rend l'image tout de suite */
-          poserOpacite(opacite - dt / SORTIE);
-          if (opacite <= 0.001) { p.noLoop(); eteindre(); return; }
+  function teinte(r, g, b) {
+    const mn = Math.min(r, g, b);
+    const mx = Math.max(r, g, b);
+    if (mn === mx) return 0;
+    let h;
+    if (mx === r) h = (g - b) / (mx - mn);
+    else if (mx === g) h = 2 + (b - r) / (mx - mn);
+    else h = 4 + (r - g) / (mx - mn);
+    h *= 60;
+    return h < 0 ? h + 360 : h;
+  }
+
+  function saturation(r, g, b) {
+    const mn = Math.min(r, g, b);
+    const mx = Math.max(r, g, b);
+    const l = luminosite(r, g, b);
+    if (mx === mn) return 0;
+    return l <= 127.5 ? (mx - mn) / (mx + mn) : (mx - mn) / (510 - mx - mn);
+  }
+
+  function clef(r, g, b) {
+    switch (R.triPar) {
+      case "R": return r;
+      case "G": return g;
+      case "B": return b;
+      case "H": return teinte(r, g, b);
+      case "S": return saturation(r, g, b) * 255;
+      default: return luminosite(r, g, b);
+    }
+  }
+
+  /* tampons reutilises : trier ne doit rien allouer */
+  let pix = new Uint32Array(0);
+  let cles = new Float64Array(0);
+  let rang = new Uint32Array(0);
+
+  function reserver(n) {
+    if (pix.length >= n) return;
+    pix = new Uint32Array(n);
+    cles = new Float64Array(n);
+    rang = new Uint32Array(n);
+  }
+
+  /* Longueur d'une suite. Ponderee : plus le premier pixel est
+     clair (ou sombre si « contre »), plus la suite est longue. */
+  function longueurSuite(d, idx, mini, maxi) {
+    if (R.triPondere === "N" || R.triPar === "F") {
+      return Math.round(mini + Math.random() * (maxi - mini));
+    }
+    let c = clef(d[idx], d[idx + 1], d[idx + 2]);
+    if (R.triPar === "H") c = (c / 360) * 255;
+    if (R.triPondere === "A") c = 255 - c;
+    return Math.round(mini + (Math.max(0, Math.min(255, c)) / 255) * (maxi - mini));
+  }
+
+  /* Range une suite de n pixels. pas = ecart entre deux pixels dans
+     le tableau (4 en horizontal, 4*largeur en vertical). */
+  function rangerSuite(d, depart, n, pas) {
+    if (n < 3) return;
+    if (R.triPar === "F") {
+      for (let i = 0; i < n >> 1; i += 1) {
+        const a = depart + i * pas;
+        const b = depart + (n - 1 - i) * pas;
+        for (let k = 0; k < 3; k += 1) {
+          const tmp = d[a + k]; d[a + k] = d[b + k]; d[b + k] = tmp;
         }
       }
+      return;
+    }
+    reserver(n);
+    for (let i = 0; i < n; i += 1) {
+      const j = depart + i * pas;
+      pix[i] = (d[j] << 16) | (d[j + 1] << 8) | d[j + 2];
+      cles[i] = clef(d[j], d[j + 1], d[j + 2]);
+      rang[i] = i;
+    }
+    const vue = rang.subarray(0, n);
+    Array.prototype.sort.call(vue, (a, b) => cles[a] - cles[b]);
+    for (let i = 0; i < n; i += 1) {
+      const c = pix[vue[R.triInverse ? n - 1 - i : i]];
+      const j = depart + i * pas;
+      d[j] = (c >> 16) & 255;
+      d[j + 1] = (c >> 8) & 255;
+      d[j + 2] = c & 255;
+    }
+  }
 
-      if (!photo) return;
-      if (!posee) poserPhoto();
-      if (force <= 0.002) return;
+  function ranger(d, f) {
+    /* La longueur des suites depend du desordre ET du temps ecoule :
+       plus on reste sans rien faire, plus le rangement va loin.
+       Bornee a la taille de l'image. */
+    const etirement = 1 + avancee * R.triCroissance * 0.12;
+    const plafond = R.triSens === "H" ? W : H;
+    const maxi = Math.max(3, Math.min(plafond - 1, Math.round(R.triMax * f * etirement)));
+    const mini = Math.max(2, Math.min(maxi - 1, Math.round(R.triMin * f)));
+    const tranches = Math.max(1, Math.round(R.triParImage * f));
 
-      /* Le temps passe en sommeil : c'est lui qui fait grandir le
-         rangement tout seul. Il avance aussi en mode reglage, pour
-         qu'on puisse voir l'effet s'etirer. */
-      avancee += dt / 1000;
-      poserOmbre();
+    if (R.triSens === "V") {
+      for (let c = 0; c < tranches; c += 1) {
+        const col = trancheSuivante(W);
+        let y = 0;
+        while (y < H) {
+          let n = longueurSuite(d, (y * W + col) * 4, mini, maxi);
+          if (y + n >= H) n = H - y;
+          rangerSuite(d, (y * W + col) * 4, n, W * 4);
+          y += Math.max(1, n);
+        }
+      }
+    } else if (R.triSens === "H") {
+      for (let c = 0; c < tranches; c += 1) {
+        const lig = trancheSuivante(H);
+        let x = 0;
+        while (x < W) {
+          let n = longueurSuite(d, (lig * W + x) * 4, mini, maxi);
+          if (x + n >= W) n = W - x;
+          rangerSuite(d, (lig * W + x) * 4, n, 4);
+          x += Math.max(1, n);
+        }
+      }
+    } else {
+      /* le marcheur : il erre et range derriere lui */
+      for (let c = 0; c < tranches * 2; c += 1) {
+        const horizontal = Math.random() < 0.5;
+        let n = longueurSuite(d, (marcheY * W + marcheX) * 4, mini, maxi);
+        if (horizontal) {
+          if (marcheX + n >= W) n = W - marcheX - 1;
+          if (n > 2) rangerSuite(d, (marcheY * W + marcheX) * 4, n, 4);
+          marcheX += Math.random() < 0.5 ? n : -n;
+        } else {
+          if (marcheY + n >= H) n = H - marcheY - 1;
+          if (n > 2) rangerSuite(d, (marcheY * W + marcheX) * 4, n, W * 4);
+          marcheY += Math.random() < 0.5 ? n : -n;
+        }
+        marcheX = Math.max(0, Math.min(W - 2, marcheX));
+        marcheY = Math.max(0, Math.min(H - 2, marcheY));
+      }
+    }
+  }
 
-      const t = p.millis() / 1000;
-      const depart = performance.now();
-      /* UNE seule lecture et UNE seule ecriture de pixels par
-         image : les deux gestes travaillent sur le meme tableau. */
-      p.loadPixels();
-      const d = p.pixels;
-      barbouiller(d, force, t);
-      ranger(d, force);
-      p.updatePixels();
-      mesures.push(performance.now() - depart);
-      if (mesures.length > 60) mesures.shift();
-    };
+  /* ============================================================
+     UNE IMAGE
+     ============================================================ */
+  const debut = performance.now();
 
-    p.reposer = function () { posee = false; };
-    p.redimensionner = function () {
-      const e = echelle();
-      p.resizeCanvas(Math.round(largeur() * e), Math.round(hauteur() * e));
-      posee = false;
-    };
+  function uneImage(dt, maintenant) {
+    if (!fige) {
+      if (cible === 1) {
+        /* le desordre monte, et le fondu de la page vers l'effet
+           prend ses quatre secondes */
+        force = Math.min(1, force + dt / MONTEE);
+        poserOpacite(opacite + dt / FONDU);
+      } else {
+        /* on a repris la main : on rend l'image tout de suite */
+        poserOpacite(opacite - dt / SORTIE);
+        if (opacite <= 0.001) { arreter(); eteindre(); return; }
+      }
+    }
+
+    if (!photo) return;
+    if (!posee) poserPhoto();
+    if (force <= 0.002) return;
+
+    /* Le temps passe en sommeil : c'est lui qui fait grandir le
+       rangement tout seul. Il avance aussi en mode reglage, pour
+       qu'on puisse voir l'effet s'etirer. */
+    avancee += dt / 1000;
+    poserOmbre();
+
+    const t = (maintenant - debut) / 1000;
+    const depart = performance.now();
+    /* les deux gestes travaillent sur le meme tableau, renvoye a
+       l'ecran une seule fois par image */
+    const d = image.data;
+    barbouiller(d, force, t);
+    ranger(d, force);
+    ctx.putImageData(image, 0, 0);
+    mesures.push(performance.now() - depart);
+    if (mesures.length > 60) mesures.shift();
+  }
+
+  /* CADENCE images par seconde, pas une de plus : entre deux, on
+     repasse la main tout de suite. */
+  let boucle = 0;
+  let derniere = 0;
+
+  function battre(maintenant) {
+    boucle = requestAnimationFrame(battre);
+    const attendu = 1000 / CADENCE;
+    if (derniere && maintenant - derniere < attendu - 1) return;
+    const dt = Math.min(140, derniere ? maintenant - derniere : attendu);
+    derniere = maintenant;
+    uneImage(dt, maintenant);
+  }
+
+  function lancer() {
+    if (boucle) return;
+    derniere = 0;
+    boucle = requestAnimationFrame(battre);
+  }
+
+  function arreter() {
+    if (boucle) cancelAnimationFrame(boucle);
+    boucle = 0;
   }
 
   /* ============================================================
@@ -627,7 +712,6 @@
     hote.style.opacity = opacite.toFixed(3);
   }
 
-  /* avancee = temps passe en sommeil, en secondes */
   function poserOmbre() {
     /* On compte a partir du moment ou l'effet a ete lance, pas a
        partir des images dessinees : la photo de la page prend un
@@ -638,16 +722,11 @@
     ombre.style.opacity = (v * v * (3 - 2 * v) * OMBRE_FORCE).toFixed(4);
   }
 
+  /* la toile est posee AVANT d'etre mesuree : sans ca elle prend la
+     taille de la fenetre, pas la sienne */
   function preparer() {
-    /* la toile est posee AVANT que p5 la mesure : sans ca elle se
-       fabrique a la taille de la fenetre, pas a la sienne */
     if (!hote.parentNode) document.body.appendChild(hote);
-    if (!croquis) croquis = new p5(sketch, hote);
-  }
-
-  function allumer() {
-    preparer();
-    croquis.loop();
+    tailler();
   }
 
   function eteindre() {
@@ -656,7 +735,7 @@
     avancee = 0;
     depuisSommeil = 0;
     ombre.style.opacity = "0";
-    if (croquis && croquis.reposer) croquis.reposer();
+    posee = false;
     if (hote.parentNode) hote.remove();
     photo = null;
     /* Le logo n'est pas abime par l'effet et ne disparait pas avec
@@ -680,7 +759,7 @@
     depuisSommeil = performance.now();
     preparer();                 /* la toile d'abord, on mesure ensuite */
     photographier();
-    allumer();
+    lancer();
     /* Le logo arrive apres, sur sa propre toile (glitch-logo.js) :
        la bouillie s'installe d'abord, le logo se construit ensuite. */
     clearTimeout(minuteurLogo);
@@ -697,9 +776,9 @@
     if (minuteurLogo) { clearTimeout(minuteurLogo); minuteurLogo = 0; }
     if (minuteur) clearTimeout(minuteur);
     minuteur = setTimeout(endormir, ATTENTE);
-    /* la toile est encore la : on la fait disparaitre tout de suite
-       plutot que d'attendre la fin d'une descente */
-    if (opacite > 0.001 && croquis) croquis.loop();
+    /* la toile est encore la : elle s'efface en un instant (SORTIE) ;
+       sinon on range tout de suite */
+    if (opacite > 0.001) lancer();
     else if (hote.parentNode) eteindre();
   }
 
@@ -708,11 +787,11 @@
 
   window.addEventListener("resize", () => {
     photo = null;
-    if (croquis && croquis.redimensionner) croquis.redimensionner();
+    posee = false;
     reveiller();
   });
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) { cible = 0; force = 0; if (croquis) croquis.noLoop(); eteindre(); }
+    if (document.hidden) { cible = 0; force = 0; arreter(); eteindre(); }
   });
 
   reveiller();
@@ -728,7 +807,7 @@
       return {
         image_ms: Math.round(t[t.length >> 1] * 100) / 100,
         pire_ms: Math.round(t[t.length - 1] * 100) / 100,
-        toile: croquis ? [croquis.width, croquis.height] : null,
+        toile: [W, H],
         budget_ms: Math.round(1000 / CADENCE)
       };
     },
@@ -736,14 +815,14 @@
     sleep: endormir,
     wake: reveiller,
     /* un nouveau jeu de reglages, sans recharger la page */
-    retirer() { tirerReglages(); if (croquis) croquis.reposer(); return R; },
+    retirer() { tirerReglages(); posee = false; return R; },
     /* la meme retouche que celle faite a chaque arret */
-    retoucher() { retoucherReglages(); if (croquis) croquis.reposer(); return R; },
+    retoucher() { retoucherReglages(); posee = false; return R; },
     /* Fige l'effet pour le regarder. montre(1) puis montre(0). */
     montre(f) {
       if (!f) {
         fige = false; cible = 0; force = 0;
-        if (croquis) croquis.noLoop();
+        arreter();
         eteindre();
         return 0;
       }
@@ -751,9 +830,10 @@
       cible = 1;
       force = Math.max(0, Math.min(1, f));
       preparer();
-      const poser = () => { croquis.loop(); poserOpacite(1); return force; };
+      const poser = () => { lancer(); poserOpacite(1); return force; };
       if (photo) return poser();
-      return window.BSSnapshot.take().then((c) => { photo = c; return poser(); });
+      return window.BSSnapshot.take({ largeur: largeur(), hauteur: hauteur() })
+        .then((c) => { photo = c; posee = false; return poser(); });
     }
   };
 })();
