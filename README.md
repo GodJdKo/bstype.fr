@@ -113,6 +113,13 @@ Le bouton **FR / EN** en haut à droite change la langue de tout le
 site. Il n'y a jamais de mélange : la page se recharge dans la
 langue choisie, et le navigateur s'en souvient.
 
+La version anglaise a **sa propre adresse** : la même, suivie de
+`?lang=en` (`https://www.bstype.fr/fonts/hexcd/?lang=en`). C'est
+elle qu'on annonce aux moteurs de recherche, et un lien partagé
+ainsi s'ouvre en anglais. Sans rien dans l'adresse, le site prend la
+langue déjà choisie, sinon celle du navigateur — sauf pour les
+robots des moteurs, qui lisent toujours le français.
+
 Trois endroits où écrire les textes :
 
 | Quoi | Où |
@@ -129,6 +136,83 @@ Dans `i18n.js`, une ligne = une phrase :
 
 Une clé oubliée s'affiche telle quelle à l'écran (par exemple
 `ed.random`) : c'est voulu, ça se repère tout de suite.
+
+---
+
+## Être trouvé sur internet
+
+### Ce qui se fait tout seul
+
+À chaque double-clic sur `Maj.command`, `scripts/referencement.js`
+réécrit :
+
+| Quoi | Pour quoi faire |
+|---|---|
+| le **titre** et la **description** de chaque page | ce que Google affiche dans ses résultats |
+| l'**adresse officielle** de chaque page (`canonical`) | une seule adresse par page, pas `index.html` en double |
+| l'**annonce de la version anglaise** (`hreflang`) | Google montre la bonne langue au bon public |
+| la **carte de partage** (Open Graph) et une **image par fonte** | le nom de la fonte, écrit dans la fonte, quand on colle un lien dans Instagram, WhatsApp, iMessage, Discord, LinkedIn… |
+| une **fiche lisible par les moteurs** (JSON-LD) | la fonderie, ses fondateurs, son Instagram ; pour chaque fonte, son auteur et son année |
+| `sitemap.xml` | la liste de toutes les pages, à donner à Google |
+| `robots.txt` | ce que les moteurs ont le droit de lire |
+
+Les images de partage (`assets/partage/*.jpg`) sont fabriquées par
+Quick Look et `sips`, livrés avec macOS : rien à installer. Elles ne
+sont refaites que si quelque chose a changé (nom, auteur, fichier de
+police).
+
+L'adresse du site vient du fichier `CNAME`. Les fondateurs et les
+liens (Instagram, Behance...) sont dans `assets/js/fonts-data.js`,
+bloc `window.BS_SITE` : c'est là qu'on ajoute un nouveau réseau.
+
+Ne modifie rien **à la main** entre les commentaires `REFERENCEMENT`
+et `TITRE` des pages : c'est réécrit à chaque mise à jour.
+
+Aussi en place : les icônes d'écran d'accueil
+(`assets/icones/`, faites depuis `assets/favicon.svg`), le fichier
+`site.webmanifest`, et une page **404** à l'image du site.
+
+### Ce qu'il faut faire une fois, à la main
+
+1. **Google Search Console** — https://search.google.com/search-console
+   - « Ajouter une propriété », type **Domaine**, `bstype.fr` ;
+   - Google donne un enregistrement **TXT** à ajouter dans la zone
+     DNS du nom de domaine, chez le registraire (là où `bstype.fr` a
+     été acheté) ; attendre quelques minutes, « Valider » ;
+   - menu **Sitemaps** : envoyer `https://www.bstype.fr/sitemap.xml` ;
+   - **Inspection de l'URL** sur `https://www.bstype.fr/`, puis
+     « Demander une indexation ».
+2. **Bing Webmaster Tools** — https://www.bing.com/webmasters
+   - « Importer depuis Google Search Console » : deux clics. Bing
+     nourrit aussi DuckDuckGo, Ecosia et Qwant.
+3. **GitHub**, réglages du dépôt, *Pages* : vérifier que
+   **Enforce HTTPS** est coché.
+
+Compter quelques jours à quelques semaines avant d'apparaître.
+
+### Pour vérifier
+
+- la fiche lue par Google :
+  https://search.google.com/test/rich-results
+- la carte de partage : https://www.opengraph.xyz (coller une
+  adresse de page de fonte) ;
+- dans Google : `site:bstype.fr` liste les pages déjà rangées.
+
+### Ce qui fait monter le site
+
+Google classe surtout d'après **les liens qui mènent au site**. Les
+plus utiles pour une fonderie libre :
+
+- le lien dans la **bio Instagram**, et sur les comptes des auteurs ;
+- les **annuaires de fontes libres** (Uncut, Open Foundry,
+  Fontsource, Font Library...) : chaque fiche renvoie au site ;
+- **Fonts In Use** : chaque travail publié avec une fonte BS.type
+  cite la fonderie ;
+- les pages de **projets** (Behance, portfolios, écoles) qui
+  utilisent les fontes : demander un lien vers la page de la fonte.
+
+Et une page qui **se partage bien** : les images de partage sont
+faites pour ça.
 
 ---
 
@@ -1271,8 +1355,9 @@ ce n'est pas visible.
 ## Fichiers à ne pas éditer à la main
 
 `assets/css/fonts.css`, `assets/js/faces-data.js`,
-`assets/js/inuse-data.js` et les `fonts/*/media/manifest.json` sont
-**régénérés** par le script. Toute modification manuelle sera écrasée.
+`assets/js/inuse-data.js`, les `fonts/*/media/manifest.json`,
+`sitemap.xml`, `robots.txt`, `assets/partage/` et les blocs
+`REFERENCEMENT` / `TITRE` des pages sont **régénérés** par le script. Toute modification manuelle sera écrasée.
 
 `assets/js/i18n.js` (les textes FR/EN), `assets/js/samples.js` (les
 textes d'essai) et `assets/js/fonts-data.js`, eux, sont faits pour

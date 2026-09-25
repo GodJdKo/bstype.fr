@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Ecrit par Maj.command (scripts/referencement.js) : la liste des pages du site, pour les moteurs de recherche. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://www.bstype.fr/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.bstype.fr/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/"/>
+  </url>
+  <url>
+    <loc>https://www.bstype.fr/fonts/bs-mono/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.bstype.fr/fonts/bs-mono/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/fonts/bs-mono/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/fonts/bs-mono/"/>
+  </url>
+  <url>
+    <loc>https://www.bstype.fr/fonts/hexcd/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.bstype.fr/fonts/hexcd/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/fonts/hexcd/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/fonts/hexcd/"/>
+  </url>
+  <url>
+    <loc>https://www.bstype.fr/fonts/saint-trop/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.bstype.fr/fonts/saint-trop/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/fonts/saint-trop/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/fonts/saint-trop/"/>
+  </url>
+  <url>
+    <loc>https://www.bstype.fr/fonts/arutext/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.bstype.fr/fonts/arutext/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/fonts/arutext/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/fonts/arutext/"/>
+  </url>
+  <url>
+    <loc>https://www.bstype.fr/fonts/baton/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.bstype.fr/fonts/baton/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/fonts/baton/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/fonts/baton/"/>
+  </url>
+  <url>
+    <loc>https://www.bstype.fr/fonts/persvrance/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.bstype.fr/fonts/persvrance/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/fonts/persvrance/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/fonts/persvrance/"/>
+  </url>
+  <url>
+    <loc>https://www.bstype.fr/fonts/jalleau/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.bstype.fr/fonts/jalleau/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/fonts/jalleau/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/fonts/jalleau/"/>
+  </url>
+</urlset>

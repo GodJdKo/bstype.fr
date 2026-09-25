@@ -57,7 +57,8 @@
 
   if (!font || !grid) return;
 
-  document.title = font.name + " — BS.type";
+  /* meme titre que celui ecrit dans la page par Maj.command */
+  document.title = font.name + " — " + t("seo.fontTitle") + " · BS.type";
 
   const CELL_TYPES = [
     { value: "characterset", label: t("zone.characterset") },

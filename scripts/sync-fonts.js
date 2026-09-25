@@ -33,6 +33,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const { execFileSync } = require("child_process");
+const referencement = require("./referencement.js");
 
 const ROOT = path.join(__dirname, "..");
 const FONT_DIR = path.join(ROOT, "assets", "fonts");
@@ -160,6 +161,13 @@ function readFonts() {
   const code = fs.readFileSync(DATA_FILE, "utf8");
   new Function("window", code)(sandbox.window);
   return sandbox.window.BS_FONTS || [];
+}
+
+/* les infos du site (fondateurs, liens) : bloc window.BS_SITE */
+function readSite() {
+  const sandbox = { window: {} };
+  new Function("window", fs.readFileSync(DATA_FILE, "utf8"))(sandbox.window);
+  return sandbox.window.BS_SITE || {};
 }
 
 const slugify = (s) =>
@@ -1276,6 +1284,15 @@ if (ensureInUseScript(path.join(ROOT, "index.html"))) wired += 1;
 
 const piedInfo = refairePied();
 
+/* referencement : balises, sitemap, robots, images de partage.
+   Le titre des pages de fonte reprend celui de i18n.js (seo.fontTitle). */
+const titreFonte = (() => {
+  const m = fs.readFileSync(path.join(ROOT, "assets", "js", "i18n.js"), "utf8")
+    .match(/"seo\.fontTitle":\s*\{\s*fr:\s*"([^"]+)"/);
+  return m ? m[1] : "police libre et gratuite";
+})();
+const refInfo = referencement.ecrire({ ROOT, PAGES_DIR, fonts: finalFonts, site: readSite(), i18nTitreFonte: titreFonte });
+
 const stamp = Date.now();
 let stamped = 0;
 pages.forEach((f) => { if (stampAssets(f, stamp)) stamped += 1; });
@@ -1299,6 +1316,13 @@ finalFonts.forEach((f) => {
 console.log(`Pages specimen   : ${finalFonts.length} (dont ${pagesCreated} creee(s))`);
 console.log(`Media indexes    : ${media}`);
 if (piedInfo) console.log(`Photo du pied    : ${piedInfo}`);
+if (!refInfo.domaine) console.log("Referencement    : fichier CNAME absent — ni sitemap ni balises de partage");
+else {
+  console.log(`Referencement    : ${refInfo.pages} page(s), sitemap.xml et robots.txt pour https://${refInfo.domaine}/` +
+    (refInfo.images ? `, ${refInfo.images} image(s) de partage refaite(s)` : ""));
+  if (!refInfo.outils) console.log("  ! images de partage : qlmanage ou sips introuvable (il faut un Mac) — les anciennes sont gardees");
+  refInfo.imagesManquantes.forEach((s) => console.log(`  ! pas d'image de partage pour ${s} : elle prend celle du site`));
+}
 accentues.forEach((f) => console.log(`  ! nom fragile   : ${f} (accent ou espace — prefere des lettres simples et des tirets)`));
 console.log(`Cache navigateur : ${stamped} page(s) reestampillees (plus besoin de vider le cache)`);
 console.log(`Pastilles accueil: ${finalFonts.length} fonte(s)` + (pillsAdded ? ` (${pillsAdded} ajoutee(s))` : ""));

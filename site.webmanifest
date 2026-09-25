@@ -1,0 +1,15 @@
+{
+  "name": "BS.type — fonderie de caractères open source",
+  "short_name": "BS.type",
+  "description": "Fonderie de caractères française, indépendante et open source : des polices libres et gratuites.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "browser",
+  "background_color": "#191919",
+  "theme_color": "#191919",
+  "icons": [
+    { "src": "/assets/icones/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icones/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

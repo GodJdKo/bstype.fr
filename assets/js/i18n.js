@@ -36,10 +36,16 @@ window.BSI18n = (function () {
     "nav.lang":             { fr: "Changer de langue",   en: "Switch language" },
 
     /* ---- page d'accueil ---- */
-    "home.title":           { fr: "BS.type — Fonderie de caracteres open source",
-                              en: "BS.type — Open source type foundry" },
-    "home.description":     { fr: "BS.type, fonderie de caracteres independante, francaise, open source et a but non lucratif.",
-                              en: "BS.type, an independent French type foundry: open source and not for profit." },
+    /* Titre et description : lus par Google et affiches dans les
+       resultats de recherche, jamais dans la fonte du site — les
+       accents y sont donc a leur place. */
+    "home.title":           { fr: "BS.type — fonderie de caractères open source",
+                              en: "BS.type — open source type foundry" },
+    "home.description":     { fr: "BS.type, fonderie de caractères française, indépendante et open source : des polices libres et gratuites, à essayer en ligne et à télécharger.",
+                              en: "BS.type, an independent French open source type foundry: free fonts to try online and download." },
+    /* titre d'une page de fonte : « Hexcd — police libre et gratuite · BS.type »
+       (repris tel quel par Maj.command pour le titre ecrit dans la page) */
+    "seo.fontTitle":        { fr: "police libre et gratuite", en: "free open source font" },
     "home.subtitle":        { fr: "Fonderie francaise independante, open source",
                               en: "Open source, independant French type foundry" },
     "home.inuse":           { fr: "Fontes en usage",     en: "Fonts in use" },
@@ -134,11 +140,27 @@ window.BSI18n = (function () {
                               en: "Text to be written in assets/authorfaces/bstype.en.txt" }
   };
 
-  /* langue retenue, sinon celle du navigateur, sinon francais */
+  /* Quelle langue ?
+       1. celle de l'adresse (?lang=en) : c'est l'adresse de la
+          version anglaise, annoncee aux moteurs de recherche ;
+       2. celle choisie avec le bouton FR/EN ;
+       3. pour les robots des moteurs : le francais. Google se
+          presente en anglais ; sans cette regle il aurait range la
+          version anglaise a l'adresse de la version francaise ;
+       4. celle du navigateur, sinon le francais. */
+  const ROBOTS = /bot|crawl|spider|slurp|facebookexternalhit|embedly|preview|lighthouse/i;
+
   function initial() {
+    let demandee = null;
+    try { demandee = new URLSearchParams(location.search).get("lang"); } catch (_e) {}
+    if (LANGS.indexOf(demandee) >= 0) {
+      try { localStorage.setItem(STORE, demandee); } catch (_e) {}
+      return demandee;
+    }
     let saved = null;
     try { saved = localStorage.getItem(STORE); } catch (_e) {}
     if (LANGS.indexOf(saved) >= 0) return saved;
+    if (ROBOTS.test(navigator.userAgent || "")) return "fr";
     return /^en/i.test(navigator.language || "") ? "en" : "fr";
   }
 
@@ -160,7 +182,15 @@ window.BSI18n = (function () {
     if (LANGS.indexOf(next) < 0 || next === lang) return;
     try { localStorage.setItem(STORE, next); } catch (_e) {}
     /* On RECHARGE : c'est la seule facon simple de garantir qu'il
-       ne reste pas un seul texte dans l'autre langue. */
+       ne reste pas un seul texte dans l'autre langue. Et l'adresse
+       suit la langue (?lang=en, rien pour le francais) : sinon un
+       « ?lang=en » reste dans l'adresse et l'emporte sur le choix. */
+    try {
+      const u = new URL(window.location.href);
+      if (next === "fr") u.searchParams.delete("lang");
+      else u.searchParams.set("lang", next);
+      if (u.href !== window.location.href) { window.location.replace(u.href); return; }
+    } catch (_e) {}
     window.location.reload();
   }
 

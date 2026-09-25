@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Page introuvable — BS.type</title>
+  <!-- Page servie par GitHub Pages pour toute adresse qui n'existe
+       pas, a n'importe quelle profondeur : d'ou les chemins qui
+       partent de la racine (/assets/...). Les moteurs ne la
+       rangent pas (noindex). -->
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#191919" />
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml" />
+  <link rel="stylesheet" href="/assets/css/tokens.css" />
+  <link rel="stylesheet" href="/assets/css/fonts.css" />
+  <link rel="stylesheet" href="/assets/css/base.css" />
+  <style>
+    .perdu {
+      min-height: calc(100svh - 52px);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      padding: 0 var(--page-margin) var(--space-4);
+    }
+    .perdu__code {
+      font-size: var(--text-hero);
+      line-height: 0.95;
+      color: var(--color-lime);
+      font-weight: normal;
+    }
+    .perdu p {
+      text-transform: uppercase;
+      font-size: var(--text-subtitle);
+    }
+    .perdu a {
+      align-self: flex-start;
+      margin-top: var(--space-2);
+      padding: 0.6em 1.1em;
+      background: var(--color-orange);
+      color: var(--color-dark);
+      text-transform: uppercase;
+    }
+    .perdu a:hover { background: var(--color-lime); }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <a href="/" class="nav__brand">BS.type</a>
+  </nav>
+  <main class="perdu">
+    <h1 class="perdu__code">404</h1>
+    <p lang="fr">Cette page n'existe pas, ou plus.</p>
+    <p lang="en">This page does not exist, or no longer does.</p>
+    <a href="/">Retour a l'accueil — back home</a>
+  </main>
+</body>
+</html>

@@ -311,3 +311,18 @@ window.BS_FONTS_IN_USE_ORDER = [
   "baton"
   
 ];
+
+/* ============================================================
+   LE SITE LUI-MEME — lu par Maj.command pour le referencement
+   (fiche de la fonderie pour Google, voir scripts/referencement.js)
+     fondateurs  : les noms, tels qu'ils doivent apparaitre
+     instagram   : l'adresse COMPLETE du compte
+     behance, github, autresLiens : idem, laisser "" si aucun
+   ============================================================ */
+window.BS_SITE = {
+  fondateurs: ["Enzo Cetera", "Lucas Pernet"],
+  instagram: "https://www.instagram.com/bstype/",
+  behance: "",
+  github: "",
+  autresLiens: []
+};

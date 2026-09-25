@@ -1,0 +1,8 @@
+# Ecrit par Maj.command (scripts/referencement.js).
+# Tout le site peut etre lu ; les outils de mise a jour, non.
+User-agent: *
+Allow: /
+Disallow: /scripts/
+Disallow: /Maj.command
+
+Sitemap: https://www.bstype.fr/sitemap.xml
