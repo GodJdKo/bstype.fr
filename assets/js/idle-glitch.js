@@ -62,9 +62,9 @@
   if (!window.BSSnapshot) return;
   if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-  const ATTENTE = 4000;
+  const ATTENTE = 15000;
   const MONTEE = 9000;       /* la bouillie se depose lentement */
-  const FONDU = 4000;        /* fondu d'entree, de la page a l'effet */
+  const FONDU = 6000;        /* fondu d'entree, de la page a l'effet */
   const SORTIE = 160;        /* retour au direct : quasi immediat */
   /* Un voile noir uni se pose SUR TOUT L'ECRAN pendant que la
      bouillie s'installe : rien au premier instant, 15 % de noir au
