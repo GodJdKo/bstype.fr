@@ -299,6 +299,40 @@ window.BS_FONTS = [
       { type: "info", span: 2, content: {} },
       { type: "media", span: 2, content: {} }
     ]
+  },
+  {
+    slug: "bssecam",
+    name: "Bssecam",
+    variant: "Regular",
+    category: "A completer",
+    designer: "Enzo Cetera",
+    year: "2026",
+    cssFamily: "Bssecam",
+    file: "assets/fonts/BSSECAM-Regular.ttf",
+    demoText: "Bssecam",
+    showDemo: true,
+    demoScale: 1,
+    inUse: false,
+    pill: { top: "40%", left: "40%" },
+    familyKey: "BSSECAM",
+    styles: [
+      { label: "Regular", variant: "", cssFamily: "Bssecam", file: "assets/fonts/BSSECAM-Regular.ttf", weight: 400, style: "normal" }
+    ],
+    info: [
+      { label: "GENESIS", body: "A completer." },
+      { label: "FUTURE", body: "A completer." }
+    ],
+    infoEn: [
+      { label: "GENESIS", body: "To be written." },
+      { label: "FUTURE", body: "To be written." }
+    ],
+    editorDefaults: { size: 48, lineHeight: 1.25, letterSpacing: 0, color: "D9D9D9", bg: "191919", align: "left" },
+    gridLayout: [
+      { type: "editor", span: 2, content: {} },
+      { type: "characterset", span: 2, content: {} },
+      { type: "info", span: 2, content: {} },
+      { type: "media", span: 2, content: {} }
+    ]
   }
 ];
 

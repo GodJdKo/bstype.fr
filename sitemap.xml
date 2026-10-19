@@ -49,4 +49,10 @@
     <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/fonts/jalleau/?lang=en"/>
     <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/fonts/jalleau/"/>
   </url>
+  <url>
+    <loc>https://www.bstype.fr/fonts/bssecam/</loc>
+    <xhtml:link rel="alternate" hreflang="fr" href="https://www.bstype.fr/fonts/bssecam/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://www.bstype.fr/fonts/bssecam/?lang=en"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://www.bstype.fr/fonts/bssecam/"/>
+  </url>
 </urlset>
