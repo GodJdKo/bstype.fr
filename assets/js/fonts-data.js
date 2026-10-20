@@ -85,7 +85,7 @@ window.BS_FONTS = [
   },
   {
     slug: "hexcd",
-    name: "Hexcd",
+    name: "BS Hexcd",
     variant: "Regular",
     category: "Modular, Display",
     designer: "Enzo Cetera",
@@ -107,12 +107,12 @@ window.BS_FONTS = [
       { label: "Extra Black", variant: "", cssFamily: "HEXCD", file: "assets/fonts/HEXCD-ExtraBlack.otf", weight: 950, style: "normal" }
     ],
     info: [
-      { label: "GENESIS", body: "Un système, pas un dessin. Chaque glyphe posé sur une trame hexagonale, pensé pour l'écran et le motion design." },
-      { label: "FUTURE", body: "Version variable : densité et rotation du module en axe. Jeu de pictogrammes bâtis sur la même grille." }
+      { label: "GENESIS", body: "Un système, pas un dessin. Douze cellules en hexagone et en étoile, inspirées des écrans LCD" },
+      { label: "FUTURE", body: "Refactorisation de la fonte en un système plus propre, et variable" }
     ],
     infoEn: [
-      { label: "GENESIS", body: "A system, not a drawing. Every glyph sits on a hexagonal grid, made for screen and motion design." },
-      { label: "FUTURE", body: "Variable version: module density and rotation on an axis. A set of pictograms built on the same grid." }
+      { label: "GENESIS", body: "A system, not a drawing. Twelve cells in a hexagon and star, inspired by LCD screens." },
+      { label: "FUTURE", body: "Refactorisation of the font into a cleaner system, and variable" }
     ],
     editorDefaults: { size: 48, lineHeight: 1.2, letterSpacing: 0, color: "D9D9D9", bg: "191919", align: "left" },
     gridLayout: [
@@ -302,9 +302,9 @@ window.BS_FONTS = [
   },
   {
     slug: "bssecam",
-    name: "Bssecam",
+    name: "BS SECAM",
     variant: "Regular",
-    category: "A completer",
+    category: "Sans, Display, Monospace",
     designer: "Enzo Cetera",
     year: "2026",
     cssFamily: "Bssecam",
@@ -319,12 +319,12 @@ window.BS_FONTS = [
       { label: "Regular", variant: "", cssFamily: "Bssecam", file: "assets/fonts/BSSECAM-Regular.ttf", weight: 400, style: "normal" }
     ],
     info: [
-      { label: "GENESIS", body: "A completer." },
-      { label: "FUTURE", body: "A completer." }
+      { label: "GENESIS", body: "Une reprise moderne des polices d'affichage de nos appareils à cassettes, TV à tubes cathodiques, avec un twist modulaire." },
+      { label: "FUTURE", body: "Compléter la fonte avec les caractères japonais de base, ainsi que d'autres graisses." }
     ],
     infoEn: [
-      { label: "GENESIS", body: "To be written." },
-      { label: "FUTURE", body: "To be written." }
+      { label: "GENESIS", body: "A modern take on the display fonts of our cassette devices, CRT TVs, with a modular twist." },
+      { label: "FUTURE", body: "Complete the font with basic Japanese characters and additional weights." }
     ],
     editorDefaults: { size: 48, lineHeight: 1.25, letterSpacing: 0, color: "D9D9D9", bg: "191919", align: "left" },
     gridLayout: [

@@ -344,17 +344,19 @@
   /* ---- 3. Fonts in use : une ligne par fonte ayant des travaux ---- */
   const list = document.querySelector(".in-use__list");
   if (list) {
-    const order = (window.BS_FONTS_IN_USE_ORDER || []).slice();
-    fonts.forEach((f) => { if (order.indexOf(f.slug) < 0) order.push(f.slug); });
+    const entries = fonts
+      .map((font) => ({ font, works: inUse[font.slug] }))
+      .filter(({ works }) => works && works.items && works.items.length);
+    const counts = [...new Set(entries.map(({ works }) => works.items.length))]
+      .sort((a, b) => b - a);
 
     let any = false;
-    order.forEach((slug) => {
-      const f = fonts.find((x) => x.slug === slug);
-      const works = inUse[slug];
-      /* rien dans le dossier inUse/ : pas de ligne du tout */
-      if (!f || !works || !works.items || !works.items.length) return;
-      any = true;
-      buildInUseRow(list, f, works);
+    counts.forEach((count) => {
+      shuffle(entries.filter(({ works }) => works.items.length === count))
+        .forEach(({ font, works }) => {
+          any = true;
+          buildInUseRow(list, font, works);
+        });
     });
 
     const section = document.querySelector(".in-use");
