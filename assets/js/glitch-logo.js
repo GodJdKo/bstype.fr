@@ -1,68 +1,65 @@
 /* ============================================================
    GLITCH-LOGO.JS — LE LOGO QUI SE CONSTRUIT PENDANT LE GLITCH
    ------------------------------------------------------------
-   Quand la page part en bouillie (assets/js/idle-glitch.js), la
-   video assets/logoMedia/BSGLITCH.mp4 est jouee PAR-DESSUS, sur sa
-   propre toile. Elle n'est donc PAS abimee par l'effet : le
-   dereglement continue derriere elle, le logo reste net.
+   Quand la page part en bouillie (assets/js/idle-glitch.js), le
+   logo est dessiné PAR-DESSUS, sur sa propre toile. Il n'est donc
+   PAS abimé par l'effet : le dérèglement continue derrière lui, le
+   logo reste net.
 
    Le film :
-     - il part d'un ecran vide et fait apparaitre le logo point par
-       point ; il sert donc aussi de fondu d'entree ;
-     - arrive a la derniere image, il se FIGE tant qu'on ne fait
+     - il part d'un écran vide et fait apparaître le logo point par
+       point ; il sert donc aussi de fondu d'entrée ;
+     - arrivé à la dernière image, il se FIGE tant qu'on ne fait
        rien ;
-     - au premier geste, il repart EN ARRIERE depuis l'image ou il
-       en etait, et s'efface une fois revenu au debut.
+     - au premier geste, il repart EN ARRIÈRE et s'efface une fois
+       revenu au début.
 
-   POURQUOI PLUS RIEN N'EST GARDE EN MEMOIRE
-   -----------------------------------------
-   Premiere version : on detourait tout le film au chargement et on
-   gardait les images en memoire, comme la vignette des tetes. Ca ne
-   tient pas ici. Le film fait 1280 x 1280 et dure 12 secondes a 30
-   images par seconde : 359 x 1280 x 1280 x 4 octets = 2,3 Go. Pour
-   rentrer dans une memoire raisonnable il fallait le reduire a
-   295 x 295 et a 8 images par seconde — d'ou le logo grossier, et
-   d'ou le noir qu'on voyait encore : reduire une image MELANGE
-   chaque point avec le noir autour, et ce gris-la passait au
-   travers du detourage.
+   PLUS DE VIDÉO
+   -------------
+   Le logo est fait de carrés. Ils étaient joués depuis un film
+   (BSGLITCH.mp4, 3 Mo, décodé puis détouré image par image par la
+   carte graphique). Ils sont maintenant lus depuis une simple
+   LISTE : pour chaque image du film, la position et la taille de
+   chaque carré. Le navigateur les dessine en canvas 2D.
 
-   Cette version ne garde RIEN. Le navigateur joue le film
-   normalement, et chaque image est detouree AU VOL par la carte
-   graphique (WebGL). Memoire : zero. Definition : celle du fichier.
-   Rythme : celui du fichier.
+     - 208 Ko à télécharger au lieu de 2,9 Mo ;
+     - rien à décoder : pas de <video>, pas de WebGL, pas de souci
+       de lecture sur téléphone, pas de retour en arrière qui se
+       coince : aller à une image, c'est lire une case d'un tableau ;
+     - carrés NETS, à n'importe quelle taille d'écran : chaque bord
+       est arrondi au pixel de l'écran, il n'y a ni flou ni bavure
+       de compression ;
+     - mêmes images, même rythme, mêmes sauts que le film.
 
-   LE DETOURAGE
-   ------------
-   On ne garde QUE les pixels verts. Un pixel est vert si :
-     - il est assez clair (LUMIERE_MIN), ce qui elimine le fond ;
-     - et son vert depasse son rouge ET son bleu d'au moins
-       MARGE_VERT.
-   Mesure faite sur le fichier : les points du logo ont un ecart de
-   vert de 5 a 40 sur 255 (98 % au-dessus de 5), et le fond est noir
-   pur. Le test est FRANC, sans bord adouci : un pixel est garde ou
-   il est jete, jamais entre les deux. Aucun voile gris possible.
+   Le fichier est fabriqué par scripts/build-glitch-squares.js à
+   partir de l'original (_originaux/assets/logoMedia/BSGLITCH.mp4).
+   Le pochoir (clair ET vert) y est appliqué une fois pour toutes :
+   ce qui n'est pas vert n'est pas dans le fichier.
 
-   Le film est carre et l'ecran ne l'est pas : il est agrandi
-   jusqu'a couvrir le plus grand cote, et les bords qui depassent
-   sont coupes. Jamais de deformation.
+   Le film est carré et l'écran ne l'est pas : il est agrandi
+   jusqu'à couvrir le plus grand côté, et les bords qui dépassent
+   sont coupés. Jamais de déformation.
 
-   A L'OUVERTURE DU SITE, le meme film est joue A L'ENVERS depuis sa
-   derniere image, sur un fond noir plein qui s'efface au meme
-   rythme : le logo se defait, le noir se leve, la page apparait.
-   C'est assets/js/boot.js qui declenche ca, une fois la page prete.
+   A L'OUVERTURE DU SITE, le même film est joué À L'ENVERS depuis sa
+   dernière image, sur un fond noir plein qui s'efface au même
+   rythme : le logo se défait, le noir se lève, la page apparaît.
+   C'est assets/js/boot.js qui déclenche ça, une fois la page prête.
 
    REGLAGES (tout est en haut du fichier) :
-     CADENCE       images dessinees par seconde (20 ; le film en a 30)
+     CADENCE       images dessinées par seconde (30, comme le film)
      RETOUR        vitesse du rembobinage (4 = quatre fois plus vite)
-     DEPART_RETOUR ou le retour commence (0.75 = aux trois quarts)
-     COULEUR       aplat qui remplit le pochoir (null = couleurs du film)
+     DEPART_RETOUR timecode où le retour commence au plus tard (0.75 = aux trois quarts)
+     COULEUR       aplat dont les carrés sont remplis
      INTRO         vitesse de l'ouverture du site
-     LUMIERE_MIN   en dessous, le pixel est jete (0 a 255)
-     MARGE_VERT    de combien le vert doit depasser le rouge et le
-                   bleu pour que le pixel soit garde (0 a 255)
      PIXELS_MAX    taille maximum de la toile, en pixels
 
-   window.BS_NO_GLITCH = true avant ce script le desactive.
+   COMPATIBILITÉ : le fichier est du gzip. Les navigateurs récents le
+   décompressent seuls ; les anciens (Safari < 16.4...) passent par un
+   décompresseur de secours inclus plus bas. Il suffit de fetch, canvas
+   2D et requestAnimationFrame. Sur une machine lente, la définition de
+   la toile baisse toute seule (voir BUDGET_MS).
+
+   window.BS_NO_GLITCH = true avant ce script le désactive.
    Console : BSLogoGlitch.jouer(), .rembobiner(), .montre(t), .etat
    ============================================================ */
 
@@ -71,33 +68,37 @@
   if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   /* ---------------- reglages ---------------- */
-  const FICHIER = "assets/logoMedia/BSGLITCH.mp4";
-  /* Images dessinees par seconde. Le film en contient 30 : on n'en
-     montre que 20, ce qui allege d'un tiers le travail de la machine
-     sans que le mouvement en souffre. C'est la cadence DANS LES DEUX
-     SENS, ouverture comprise. */
-  const CADENCE = 20;
-  const CADENCE_FILM = 30;      /* cadence du fichier */
-  /* Vitesses, en multiples du temps reel. En arriere on saute des
-     images du film pour aller plus vite : a 4x et 20 images par
-     seconde, on recule de six images de film a chaque dessin. */
-  const RETOUR = 4;             /* au reveil : rembobinage rapide */
-  /* Au reveil on ne rembobine pas depuis l'endroit ou on en etait :
-     on SAUTE aux trois quarts du film, et on repart de la. Le retour
-     dure donc toujours la meme chose, quel que soit le moment. */
+  const FICHIER = "assets/logoMedia/BSGLITCH.squares.bin";
+  /* Images dessinées par seconde : les 30 du film, toutes. C'est la
+     cadence DANS LES DEUX SENS, ouverture comprise. */
+  const CADENCE = 30;
+  const CADENCE_FILM = 30;      /* cadence du film d'origine */
+  const TAILLE_FILM = 1280;     /* le film est carré : 1280 x 1280 */
+  /* Vitesses, en multiples du temps réel. En arrière on saute des
+     images du film pour aller plus vite : à 4x et 30 images par
+     seconde, on recule de quatre images à chaque dessin. */
+  const RETOUR = 4;             /* au réveil : rembobinage rapide */
+  /* LE POINT DE DEPART DU RETOUR est un timecode fixe : les trois
+     quarts du film, arrondis à l'image. Au réveil :
+       - si le film n'y est pas encore arrivé (il joue en avant, en
+         dessous de ce timecode), le retour part de l'endroit EXACT
+         où il se trouve ;
+       - s'il l'a dépassé (ou s'il est figé sur sa dernière image),
+         on SAUTE à ce timecode et on repart de là.
+     Le retour dure donc au plus la même chose, quel que soit le
+     moment. */
   const DEPART_RETOUR = 0.75;
-  const INTRO = 3;              /* a l'ouverture du site */
-  const LUMIERE_MIN = 100;      /* sur 255 */
-  const MARGE_VERT = 6;         /* sur 255 */
-  /* Le film ne sert plus que de POCHOIR : on garde sa forme et on la
-     remplit d'un aplat, le vert acide de la charte. Ca ne coute rien
-     — c'est meme une operation de moins par pixel que de recopier la
-     couleur du film. Mettre COULEUR a null rend au film ses propres
-     couleurs. */
+  const INTRO = 3;              /* à l'ouverture du site */
+  /* L'aplat dont les carrés sont remplis : le vert acide de la charte. */
   const COULEUR = "#9dff00";
-  /* Plafond de la toile. Un ecran 5K demanderait 15 millions de
-     pixels a remplir : inutile, le film n'en a que 1,6 million. */
+  /* Plafond de la toile. Un écran 5K demanderait 15 millions de
+     pixels à remplir : inutile, le film n'en a que 1,6 million. */
   const PIXELS_MAX = 4200000;
+  /* Filet de sécurité pour les petites machines : si dessiner une
+     image coûte en moyenne plus que BUDGET_MS, on baisse la
+     définition de la toile d'un quart (deux fois au plus). Les
+     carrés restent nets : la toile est agrandie sans lissage. */
+  const BUDGET_MS = 12;
 
   const moi = document.currentScript && document.currentScript.src;
   const BASE = moi ? moi.replace(/assets\/js\/glitch-logo\.js.*$/, "") : "";
@@ -106,59 +107,45 @@
   const hote = document.createElement("div");
   hote.className = "bs-glitch-logo";
   hote.setAttribute("aria-hidden", "true");
-  /* la photo de la page ne doit pas se photographier elle-meme */
+  /* la photo de la page ne doit pas se photographier elle-même */
   hote.setAttribute("data-no-snapshot", "");
 
   /* Voile noir de l'ouverture : il part opaque et s'efface au fil du
-     film, decouvrant la page. Sous la toile, jamais au-dessus. */
+     film, découvrant la page. Sous la toile, jamais au-dessus. */
   const voile = document.createElement("div");
   voile.className = "bs-glitch-logo__voile";
   hote.appendChild(voile);
 
   const toile = document.createElement("canvas");
   hote.appendChild(toile);
-
-  /* Le <video> doit rester DANS le document : un element detache
-     n'est pas decode par le navigateur. Il est donc present mais
-     invisible (jamais display:none, qui couperait le decodage). */
-  const video = document.createElement("video");
-  video.className = "bs-face-src";
-  video.muted = true;
-  video.defaultMuted = true;
-  video.playsInline = true;
-  video.preload = "auto";
-  video.setAttribute("aria-hidden", "true");
+  const ctx = toile.getContext("2d", { alpha: true });
 
   /* ---------------- etat ---------------- */
-  let gl = null;
-  let prog = null;
-  let texture = null;
-  let uEchelle = null;
-  let pret = false;         /* le film est-il jouable ? */
+  let images = null;        /* [{ n, x, y, w, h }] une entrée par image */
+  let pret = false;         /* la liste est-elle chargée ? */
+  let demande = false;      /* l'a-t-on demandée au réseau ? */
+  let duree = 0;            /* nombre d'images / 30, en secondes */
+  let temps = 0;            /* position dans le film, en secondes */
   let sens = 0;             /* +1 avance, -1 rembobine, 0 fige */
   let boucle = 0;
   let dernier = 0;
-  let dernierTemps = -1;    /* pour ne pas renvoyer deux fois la meme image */
   let dernierDessin = 0;    /* pour tenir la cadence */
+  let derniereImage = -1;   /* pour ne pas redessiner deux fois la même */
   let posee = false;
   let ouverture = false;    /* on joue l'ouverture du site ? */
-  /* Surveillance du retour en arriere. Reculer dans un film demande
-     au navigateur de redecoder : sur telephone il refuse parfois, et
-     l'image se figeait puis disparaissait d'un coup. Si le film ne
-     recule plus pendant BLOCAGE millisecondes, on abandonne le
-     retour image par image et on FOND simplement — meme duree, meme
-     effet a l'oeil, et ca ne se coince jamais. */
-  const BLOCAGE = 400;
-  let derniereAvancee = 0;  /* instant du dernier vrai recul */
-  let posSurveillee = -1;
-  let fondu = 0;            /* 0 = pas de fondu ; sinon, ce qu'il reste */
-  let fonduTotal = 0;
-  let aLaMain = false;      /* on pousse le film nous-memes ? */
+  let qualite = 1;          /* 1 = définition pleine ; baisse si la machine rame */
+  let coutTotal = 0, coutN = 0;
 
-  /* Dimensions prises sur LA TOILE ELLE-MEME des qu'elle est posee.
-     Sur telephone, la hauteur de la fenetre ne vaut pas la hauteur
-     de ce qu'on voit (barre d'adresse) : le logo s'y retrouvait
-     legerement deforme. */
+  /* Le film se termine un peu avant sa durée (comme avant : 0,04 s) */
+  const fin = () => Math.max(0, duree - 0.04);
+  /* timecode de départ du retour, exact à l'image près */
+  const departRetour = () =>
+    Math.floor(duree * DEPART_RETOUR * CADENCE_FILM) / CADENCE_FILM;
+  const numero = () => Math.max(0, Math.min(images.length - 1, Math.floor(temps * CADENCE_FILM + 1e-6)));
+
+  /* Dimensions prises sur LA TOILE ELLE-MEME dès qu'elle est posée.
+     Sur téléphone, la hauteur de la fenêtre ne vaut pas la hauteur
+     de ce qu'on voit (barre d'adresse). */
   function boite() {
     if (posee) {
       const r = hote.getBoundingClientRect();
@@ -169,115 +156,14 @@
       height: document.documentElement.clientHeight
     };
   }
-  const largeur = () => Math.max(1, boite().width);
-  const hauteur = () => Math.max(1, boite().height);
-
-  /* ============================================================
-     LA CARTE GRAPHIQUE
-     ------------------------------------------------------------
-     Deux petits programmes. Le premier pose un rectangle qui couvre
-     l'ecran et calcule, pour chaque point, ou aller chercher la
-     couleur dans le film — c'est la que se fait le recadrage. Le
-     second decide, pour chaque point, s'il est vert, et le jette
-     sinon.
-     ============================================================ */
-  const SOMMETS = [
-    "attribute vec2 place;",
-    "uniform vec2 echelle;",
-    "varying vec2 uv;",
-    "void main() {",
-    "  vec2 t = place * 0.5 + 0.5;",
-    "  t = (t - 0.5) * echelle + 0.5;",
-    "  uv = vec2(t.x, 1.0 - t.y);",   /* le film est a l'endroit, la toile a l'envers */
-    "  gl_Position = vec4(place, 0.0, 1.0);",
-    "}"
-  ].join("\n");
-
-  const COULEURS = [
-    "precision mediump float;",
-    "varying vec2 uv;",
-    "uniform sampler2D film;",
-    "uniform float lumiereMin;",
-    "uniform float margeVert;",
-    "uniform vec4 aplat;",
-    "void main() {",
-    "  vec3 c = texture2D(film, uv).rgb;",
-    "  float lum = dot(c, vec3(0.299, 0.587, 0.114));",
-    "  float vert = c.g - max(c.r, c.b);",
-    /* test franc : garde ou jete, jamais entre les deux */
-    "  if (lum < lumiereMin || vert < margeVert) discard;",
-    /* aplat si une couleur est donnee, sinon la couleur du film */
-    "  gl_FragColor = vec4(aplat.a > 0.5 ? aplat.rgb : c, 1.0);",
-    "}"
-  ].join("\n");
-
-  /* « #9dff00 » -> [0.61, 1, 0] */
-  function lireCouleur(h) {
-    const m = String(h).trim().replace("#", "");
-    if (m.length !== 6) return null;
-    return [
-      parseInt(m.slice(0, 2), 16) / 255,
-      parseInt(m.slice(2, 4), 16) / 255,
-      parseInt(m.slice(4, 6), 16) / 255
-    ];
-  }
-
-  function compiler(type, source) {
-    const s = gl.createShader(type);
-    gl.shaderSource(s, source);
-    gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) return null;
-    return s;
-  }
-
-  function preparerCarte() {
-    gl = toile.getContext("webgl", { alpha: true, premultipliedAlpha: false, antialias: false })
-      || toile.getContext("experimental-webgl", { alpha: true, premultipliedAlpha: false });
-    if (!gl) return false;
-
-    const vs = compiler(gl.VERTEX_SHADER, SOMMETS);
-    const fs = compiler(gl.FRAGMENT_SHADER, COULEURS);
-    if (!vs || !fs) return false;
-
-    prog = gl.createProgram();
-    gl.attachShader(prog, vs);
-    gl.attachShader(prog, fs);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return false;
-    gl.useProgram(prog);
-
-    /* le rectangle qui couvre l'ecran : deux triangles */
-    const tampon = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, tampon);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
-    const place = gl.getAttribLocation(prog, "place");
-    gl.enableVertexAttribArray(place);
-    gl.vertexAttribPointer(place, 2, gl.FLOAT, false, 0, 0);
-
-    texture = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    /* pas de lissage : les points du logo restent des carres nets */
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-    uEchelle = gl.getUniformLocation(prog, "echelle");
-    gl.uniform1i(gl.getUniformLocation(prog, "film"), 0);
-    gl.uniform1f(gl.getUniformLocation(prog, "lumiereMin"), LUMIERE_MIN / 255);
-    gl.uniform1f(gl.getUniformLocation(prog, "margeVert"), MARGE_VERT / 255);
-    const t = COULEUR ? lireCouleur(COULEUR) : null;
-    gl.uniform4f(gl.getUniformLocation(prog, "aplat"),
-      t ? t[0] : 0, t ? t[1] : 0, t ? t[2] : 0, t ? 1 : 0);
-    return true;
-  }
 
   /* ---------------- la toile a la bonne taille ---------------- */
   function tailler() {
-    const L = largeur(), H = hauteur();
-    /* On dessine a la definition de l'ecran (Retina compris), sans
-       depasser PIXELS_MAX. */
-    let d = Math.min(window.devicePixelRatio || 1, 2);
+    const b = boite();
+    const L = Math.max(1, b.width), H = Math.max(1, b.height);
+    /* On dessine à la définition de l'écran (Retina compris), sans
+       dépasser PIXELS_MAX. */
+    let d = Math.min(window.devicePixelRatio || 1, 2) * qualite;
     const k = Math.sqrt(PIXELS_MAX / Math.max(1, L * H * d * d));
     if (k < 1) d *= k;
     const l = Math.max(1, Math.round(L * d));
@@ -285,30 +171,49 @@
     if (toile.width !== l || toile.height !== h) {
       toile.width = l;
       toile.height = h;
-      if (gl) gl.viewport(0, 0, l, h);
-    }
-    /* Recadrage « couvrir » : le film est carre, on garde ses
-       proportions et on coupe ce qui depasse. */
-    if (uEchelle) {
-      if (l > h) gl.uniform2f(uEchelle, 1, h / l);
-      else gl.uniform2f(uEchelle, l / h, 1);
+      derniereImage = -1;
     }
   }
 
+  /* ============================================================
+     LE DESSIN
+     ------------------------------------------------------------
+     Recadrage « couvrir » : le film est carré, on garde ses
+     proportions et on coupe ce qui dépasse. Chaque carré est posé
+     par son COIN arrondi au pixel de l'écran et son CÔTÉ arrondi
+     lui aussi : net, sans lissage, jamais plus petit qu'un pixel, et
+     toujours carré.
+     ============================================================ */
   function dessiner(force) {
-    if (!gl || !pret) return;
-    if (!force && video.currentTime === dernierTemps) return;
-    dernierTemps = video.currentTime;
+    if (!pret) return;
+    const i = numero();
+    if (!force && i === derniereImage) return;
+    const debut = performance.now();
     tailler();
-    gl.bindTexture(gl.TEXTURE_2D, texture);
-    try {
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, video);
-    } catch (_e) {
-      return;                        /* image pas encore decodee */
+    const L = toile.width, H = toile.height;
+    const e = Math.max(L, H) / TAILLE_FILM;
+    const dx = (L - TAILLE_FILM * e) / 2;
+    const dy = (H - TAILLE_FILM * e) / 2;
+    const f = images[i];
+    ctx.clearRect(0, 0, L, H);
+    ctx.fillStyle = COULEUR;
+    ctx.beginPath();
+    for (let k = 0; k < f.n; k++) {
+      const x0 = Math.round(dx + f.x[k] * e);
+      const y0 = Math.round(dy + f.y[k] * e);
+      /* UN CARRÉ : un seul côté, donc largeur = hauteur, toujours.
+         (Arrondir les quatre bords séparément donnerait par moments
+         un rectangle d'un pixel de plus d'un côté.) */
+      const cote = Math.max(1, Math.round(f.c[k] * e));
+      ctx.rect(x0, y0, cote, cote);
     }
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    ctx.fill();
+    derniereImage = i;
+    coutTotal += performance.now() - debut;
+    if (++coutN === 30) {
+      if (coutTotal / coutN > BUDGET_MS && qualite > 0.5) { qualite *= 0.75; derniereImage = -1; }
+      coutTotal = 0; coutN = 0;
+    }
   }
 
   function poser() {
@@ -317,37 +222,32 @@
     posee = true;
   }
 
-  /* opacite du voile noir : plein au debut du film... a l'envers,
-     donc a la FIN, et rien une fois revenu au debut */
+  /* opacité du voile noir : plein au début du film... à l'envers,
+     donc à la FIN, et rien une fois revenu au début */
   function poserVoile(v) {
     voile.style.opacity = ouverture ? Math.max(0, Math.min(1, v)).toFixed(3) : "0";
   }
 
   function retirer() {
     if (boucle) { cancelAnimationFrame(boucle); boucle = 0; }
-    video.pause();
+    sens = 0;
     ouverture = false;
-    fondu = 0;
-    aLaMain = false;
-    posSurveillee = -1;
     hote.style.opacity = "";
     hote.classList.remove("is-ouverture");
     poserVoile(0);
+    temps = 0;
+    derniereImage = -1;
     if (!posee) return;
     hote.remove();
     posee = false;
-    /* on remet le film au debut : la prochaine fois il repart de la */
-    try { video.currentTime = 0; } catch (_e) {}
   }
 
   /* ---------------- le deroulement ---------------- */
-  const fin = () => Math.max(0, (video.duration || 0) - 0.04);
-
   function avancer(maintenant) {
     boucle = 0;
     if (!pret) { sens = 0; return; }
 
-    /* CADENCE : on ne dessine pas a chaque battement de l'ecran,
+    /* CADENCE : on ne dessine pas à chaque battement de l'écran,
        mais vingt fois par seconde. Le reste du temps on repasse la
        main tout de suite. */
     const attendu = 1000 / CADENCE;
@@ -360,63 +260,20 @@
     dernierDessin = maintenant;
 
     if (sens > 0) {
-      /* Le film avance-t-il vraiment ? Sur telephone la lecture est
-         parfois refusee en silence (economie d'energie, onglet juge
-         invisible) : l'image restait figee sur la premiere et ne
-         partait jamais. On repasse alors en AVANCE MANUELLE : on
-         pousse currentTime nous-memes, image par image. */
-      if (posSurveillee < 0 || video.currentTime > posSurveillee + 0.001) {
-        posSurveillee = video.currentTime;
-        derniereAvancee = maintenant;
-      } else if (maintenant - derniereAvancee > BLOCAGE) {
-        aLaMain = true;
-      }
-      if (aLaMain) {
-        const pas = Math.max(1, Math.round(CADENCE_FILM / CADENCE)) / CADENCE_FILM;
-        const t = video.currentTime + pas;
-        if (t < fin()) { try { video.currentTime = t; } catch (_e) {} }
-        posSurveillee = video.currentTime;
-      }
-      dessiner(aLaMain);
-      /* Arrive au bout : on se fige tant qu'on ne fait rien. La
-         derniere image reste dessinee sur la toile. */
-      if (video.currentTime >= fin()) { video.pause(); sens = 0; return; }
+      temps = Math.min(fin(), temps + dt);
+      dessiner();
+      /* Arrivé au bout : on se fige tant qu'on ne fait rien. La
+         dernière image reste dessinée sur la toile. */
+      if (temps >= fin()) { sens = 0; return; }
     } else if (sens < 0) {
       const vitesse = ouverture ? INTRO : RETOUR;
-
-      /* --- le film s'est coince : on finit en fondu --- */
-      if (fondu > 0) {
-        fondu -= dt * 1000;
-        const reste = Math.max(0, fondu / Math.max(1, fonduTotal));
-        hote.style.opacity = reste.toFixed(3);
-        poserVoile(reste);
-        if (fondu <= 0) { sens = 0; retirer(); return; }
-        boucle = requestAnimationFrame(avancer);
-        return;
-      }
-
-      /* En arriere on SAUTE des images du film : a chaque dessin on
-         recule de plusieurs images d'un coup. Chaque image du fichier
-         est une image cle (voir README.md) : reculer ne demande
-         jamais de redecoder ce qui precede. */
+      /* En arrière on SAUTE des images du film : à chaque dessin on
+         recule de plusieurs images d'un coup (voulu). */
       const saut = Math.max(1, Math.round((CADENCE_FILM / CADENCE) * vitesse));
-      const t = video.currentTime - Math.max(dt * vitesse, saut / CADENCE_FILM);
-      if (t <= 0) { sens = 0; retirer(); return; }
-
-      /* le film a-t-il vraiment recule depuis la derniere image ? */
-      if (posSurveillee < 0 || video.currentTime < posSurveillee - 0.001) {
-        posSurveillee = video.currentTime;
-        derniereAvancee = maintenant;
-      } else if (maintenant - derniereAvancee > BLOCAGE) {
-        fonduTotal = Math.max(200, (video.currentTime / vitesse) * 1000);
-        fondu = fonduTotal;
-        boucle = requestAnimationFrame(avancer);
-        return;
-      }
-
-      video.currentTime = t;
-      poserVoile(t / Math.max(0.01, video.duration || 1));
-      dessiner(true);
+      temps -= Math.max(dt * vitesse, saut / CADENCE_FILM);
+      if (temps <= 0) { retirer(); return; }
+      poserVoile(temps / Math.max(0.01, duree));
+      dessiner();
     } else {
       return;
     }
@@ -425,12 +282,6 @@
 
   function relancer() {
     if (!sens) return;
-    posSurveillee = -1;
-    derniereAvancee = performance.now();
-    /* On annule toujours l'image en attente avant d'en demander une
-       autre : quand l'onglet passe en arriere-plan, la demande
-       posee ne se realise jamais, et sans cette annulation le film
-       resterait bloque pour de bon. */
     if (boucle) cancelAnimationFrame(boucle);
     dernier = performance.now();
     dernierDessin = 0;
@@ -439,174 +290,280 @@
 
   function jouer() {
     if (!pret) return false;
-    fondu = 0;
-    aLaMain = false;
     hote.style.opacity = "";
-    /* Si le film etait reste sur sa derniere image — apres
-       l'ouverture du site, ou apres un arret force — on repart du
-       debut, sinon il se figerait aussitot. */
-    if (video.currentTime >= fin() - 0.05) {
-      try { video.currentTime = 0; } catch (_e) {}
-    }
+    /* Si le film était resté sur sa dernière image — après
+       l'ouverture du site, ou après un arrêt forcé — on repart du
+       début, sinon il se figerait aussitôt. */
+    if (temps >= fin() - 0.05) temps = 0;
     poser();
     sens = 1;
-    const p = video.play();
-    if (p && p.catch) p.catch(() => {});
+    dessiner(true);
     relancer();
     return true;
   }
 
   function rembobiner() {
     if (!posee) return false;
-    video.pause();
-    if (video.currentTime <= 0) { retirer(); return false; }
-    /* Saut aux trois quarts du film, puis retour en arriere depuis
-       la — quel que soit l'endroit ou on en etait. Le retour dure
-       donc toujours la meme chose. */
-    const depart = (video.duration || 0) * DEPART_RETOUR;
+    if (temps <= 0) { retirer(); return false; }
+    /* Avant le timecode de départ : on recule depuis l'endroit exact
+       où le film se trouve. Au-delà : on saute à ce timecode. */
+    temps = Math.min(temps, departRetour());
     sens = -1;
-    if (depart > 0 && Math.abs(depart - video.currentTime) > 0.05) {
-      const fait = () => { video.removeEventListener("seeked", fait); dessiner(true); relancer(); };
-      video.addEventListener("seeked", fait);
-      try { video.currentTime = depart; } catch (_e) { relancer(); }
-      return true;
-    }
+    dessiner(true);
     relancer();
     return true;
   }
 
   /* ---------------- l'ecran de chargement ----------------
-     La DERNIERE image du film — le logo entier — posee sur un fond
+     La DERNIERE image du film — le logo entier — posée sur un fond
      noir plein, et rien qui bouge. C'est ce qu'on voit tant que la
-     page n'est pas prete. Ensuite ouvrir() prend la suite. */
+     page n'est pas prête. Ensuite ouvrir() prend la suite. */
   function figer() {
     if (!pret) return false;
     ouverture = true;
     hote.classList.add("is-ouverture");
     poser();
     poserVoile(1);
-    video.pause();
     sens = 0;
     if (boucle) { cancelAnimationFrame(boucle); boucle = 0; }
-    const fait = () => { video.removeEventListener("seeked", fait); dessiner(true); };
-    video.addEventListener("seeked", fait);
-    video.currentTime = fin();
+    temps = fin();
+    dessiner(true);
     return true;
   }
 
   /* ---------------- l'ouverture du site ----------------
-     Le film est joue A L'ENVERS depuis sa derniere image, sur fond
-     noir plein — et ce noir s'efface au meme rythme, decouvrant la
-     page. Quand le film revient a son debut, il ne reste rien.
-     Appelee par assets/js/boot.js, une fois la page prete. */
+     Le film est joué A L'ENVERS depuis sa dernière image, sur fond
+     noir plein — et ce noir s'efface au même rythme, découvrant la
+     page. Quand le film revient à son début, il ne reste rien.
+     Appelée par assets/js/boot.js, une fois la page prête. */
   function ouvrir() {
     if (!pret) return false;
     ouverture = true;
     hote.classList.add("is-ouverture");
     poser();
     poserVoile(1);
-    video.pause();
-    /* deja fige sur la derniere image : on repart de la */
-    if (video.currentTime >= fin() - 0.2) {
-      dessiner(true);
-      sens = -1;
-      relancer();
-      return true;
-    }
-    const fait = () => {
-      video.removeEventListener("seeked", fait);
-      dessiner(true);
-      sens = -1;
-      relancer();
-    };
-    video.addEventListener("seeked", fait);
-    video.currentTime = fin();
+    temps = fin();
+    sens = -1;
+    dessiner(true);
+    relancer();
     return true;
   }
 
   /* ---------------- branchements ---------------- */
   window.addEventListener("resize", () => { if (posee) dessiner(true); });
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) { sens = 0; retirer(); try { video.currentTime = 0; } catch (_e) {} }
+    if (document.hidden) retirer();
   });
 
-  /* Quand va-t-on chercher le film ?
-     - sur l'ACCUEIL, tout de suite : c'est lui qui fait l'ecran de
-       chargement, et boot.js ne l'attend que deux secondes ;
-     - ailleurs, APRES le chargement de la page : il pese quelques
-       mega-octets, il ne doit pas se mettre en travers du site.
-     PIEGE IPHONE : Safari sur iOS ne telecharge RIEN d'une video
-     tant qu'on ne lui a pas demande de la jouer — preload="auto"
-     est ignore. Sans l'amorce ci-dessous, « loadeddata » n'arrivait
-     jamais : pas de logo pendant le dereglement, pas d'ouverture sur
-     l'accueil. On lance donc la lecture (muette, autorisee sans
-     geste) et on l'arrete aussitot. En mode economie d'energie la
-     lecture est refusee : un saut dans le film declenche alors le
-     chargement a sa place. */
-  function telecharger() {
-    if (video.src) return;
-    video.src = BASE + FICHIER;
-    video.load();
-    const p = video.play();
-    if (p && p.then) {
-      p.then(() => { if (!sens) video.pause(); })
-        .catch(() => { try { video.currentTime = 0.001; } catch (_e) {} });
+  /* ---------------- le fichier ----------------
+     Lecture de la liste (voir scripts/build-glitch-squares.js pour
+     le format), puis décompression gzip par le navigateur. */
+  function lire(octets) {
+    const u8 = new Uint8Array(octets);
+    const dv = new DataView(octets);
+    const total = dv.getUint16(0, true);
+    const liste = new Array(total);
+    let p = 2;
+    for (let f = 0; f < total; f++) {
+      const n = dv.getUint16(p, true);
+      p += 2;
+      const oDyB = p, oDyH = p + n, oDxB = p + 2 * n, oDxH = p + 3 * n;
+      const oC = p + 4 * n;
+      const x = new Uint16Array(n), y = new Uint16Array(n);
+      const c = new Uint8Array(n);
+      let cx = 0, cy = 0;
+      for (let i = 0; i < n; i++) {
+        const dy = u8[oDyB + i] | (u8[oDyH + i] << 8);
+        const dx = u8[oDxB + i] | (u8[oDxH + i] << 8);
+        cx = dy === 0 ? cx + dx : dx;
+        cy += dy;
+        x[i] = cx;
+        y[i] = cy;
+        c[i] = u8[oC + i];
+      }
+      p += 5 * n;
+      liste[f] = { n: n, x: x, y: y, c: c };
     }
+    return liste;
   }
+
+  /* ---------------- decompression de secours ----------------
+     Les navigateurs d'avant 2023 (Safari < 16.4, vieux Android) ne
+     savent pas décompresser du gzip eux-mêmes (DecompressionStream).
+     Pour eux, ce petit décompresseur (algorithme DEFLATE, une soixantaine
+     de lignes) : plus lent, quelques centaines de millisecondes, mais
+     le logo marche partout. Les autres ne l'utilisent jamais. */
+  const LB = [3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,258];
+  const LE = [0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,0];
+  const DB = [1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,257,385,513,769,1025,1537,2049,3073,4097,6145,8193,12289,16385,24577];
+  const DE = [0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12,12,13,13];
+  const ORDRE = [16,17,18,0,8,7,9,6,10,5,11,4,12,3,13,2,14,1,15];
+
+  function gunzip(buf) {
+    let p = 10;
+    const fl = buf[3];
+    if (fl & 4) p += 2 + (buf[p] | (buf[p + 1] << 8));
+    if (fl & 8) while (buf[p++]);
+    if (fl & 16) while (buf[p++]);
+    if (fl & 2) p += 2;
+    const m = buf.length;
+    const taille = ((buf[m - 4] | (buf[m - 3] << 8) | (buf[m - 2] << 16) | (buf[m - 1] << 24)) >>> 0);
+    const out = new Uint8Array(taille);
+    let o = 0, tampon = 0, nb = 0;
+
+    function bits(n) {
+      while (nb < n) { tampon |= buf[p++] << nb; nb += 8; }
+      const v = tampon & ((1 << n) - 1);
+      tampon >>>= n; nb -= n;
+      return v;
+    }
+    function table(longueurs, n) {
+      const nombre = new Uint16Array(16), symbole = new Uint16Array(n), dec = new Uint16Array(16);
+      for (let i = 0; i < n; i++) nombre[longueurs[i]]++;
+      for (let l = 1; l < 15; l++) dec[l + 1] = dec[l] + nombre[l];
+      for (let i = 0; i < n; i++) if (longueurs[i]) symbole[dec[longueurs[i]]++] = i;
+      return { nombre: nombre, symbole: symbole };
+    }
+    function lire1(t) {
+      let code = 0, premier = 0, index = 0;
+      for (let l = 1; l <= 15; l++) {
+        code |= bits(1);
+        const c = t.nombre[l];
+        if (code - c < premier) return t.symbole[index + (code - premier)];
+        index += c; premier += c; premier <<= 1; code <<= 1;
+      }
+      throw new Error("deflate");
+    }
+    function codes(lit, dist) {
+      for (;;) {
+        let sym = lire1(lit);
+        if (sym < 256) { out[o++] = sym; continue; }
+        if (sym === 256) return;
+        sym -= 257;
+        const len = LB[sym] + bits(LE[sym]);
+        const ds = lire1(dist);
+        const d = DB[ds] + bits(DE[ds]);
+        for (let i = 0; i < len; i++, o++) out[o] = out[o - d];
+      }
+    }
+
+    let dernier;
+    do {
+      dernier = bits(1);
+      const type = bits(2);
+      if (type === 0) {
+        tampon = 0; nb = 0;
+        const len = buf[p] | (buf[p + 1] << 8);
+        p += 4;
+        for (let i = 0; i < len; i++) out[o++] = buf[p++];
+      } else if (type === 1) {
+        const l = new Uint8Array(288);
+        for (let i = 0; i < 144; i++) l[i] = 8;
+        for (let i = 144; i < 256; i++) l[i] = 9;
+        for (let i = 256; i < 280; i++) l[i] = 7;
+        for (let i = 280; i < 288; i++) l[i] = 8;
+        codes(table(l, 288), table(new Uint8Array(30).fill(5), 30));
+      } else if (type === 2) {
+        const nl = bits(5) + 257, nd = bits(5) + 1, nc = bits(4) + 4;
+        const lc = new Uint8Array(19);
+        for (let i = 0; i < nc; i++) lc[ORDRE[i]] = bits(3);
+        const tc = table(lc, 19);
+        const l = new Uint8Array(nl + nd);
+        let i = 0;
+        while (i < nl + nd) {
+          const sym = lire1(tc);
+          if (sym < 16) { l[i++] = sym; continue; }
+          let rep = 0, val = 0;
+          if (sym === 16) { val = l[i - 1]; rep = 3 + bits(2); }
+          else if (sym === 17) rep = 3 + bits(3);
+          else rep = 11 + bits(7);
+          while (rep--) l[i++] = val;
+        }
+        codes(table(l.subarray(0, nl), nl), table(l.subarray(nl), nd));
+      } else throw new Error("deflate");
+    } while (!dernier);
+    return out;
+  }
+
+  /* Rend la liste en octets bruts, quelle que soit la route :
+     - fichier non compressé (serveur qui l'a déjà dégzippé) : tel quel ;
+     - navigateur moderne : décompression native ;
+     - sinon : décompresseur ci-dessus. */
+  function decompresser(octets) {
+    const u8 = new Uint8Array(octets);
+    if (u8[0] !== 0x1f || u8[1] !== 0x8b) return Promise.resolve(octets);
+    if (typeof DecompressionStream !== "undefined" && typeof Blob !== "undefined" && Blob.prototype.stream) {
+      return new Response(new Blob([octets]).stream().pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
+    }
+    return Promise.resolve(gunzip(u8).buffer);
+  }
+
+  function telecharger() {
+    if (demande) return;
+    demande = true;
+    fetch(BASE + FICHIER)
+      .then((r) => {
+        if (!r.ok) throw new Error(r.status);
+        return r.arrayBuffer();
+      })
+      .then(decompresser)
+      .then((octets) => {
+        images = lire(octets);
+        duree = images.length / CADENCE_FILM;
+        pret = true;
+      })
+      .catch(() => { /* pas de liste : pas de logo, le site marche quand même */ });
+  }
+
+  /* Quand va-t-on chercher la liste ?
+     - sur l'ACCUEIL, tout de suite : c'est elle qui fait l'écran de
+       chargement, et boot.js ne l'attend que deux secondes ;
+     - ailleurs, APRES le chargement de la page : elle ne doit pas se
+       mettre en travers du site. */
   function programmer() {
     if (window.BSBoot && window.BSBoot.accueil) { telecharger(); return; }
     if (document.readyState === "complete") setTimeout(telecharger, 400);
     else window.addEventListener("load", () => setTimeout(telecharger, 400), { once: true });
   }
 
-  video.addEventListener("loadeddata", () => {
-    if (pret) return;
-    if (!gl && !preparerCarte()) return;   /* pas de WebGL : pas de logo */
-    pret = true;
-    video.pause();
-    try { video.currentTime = 0; } catch (_e) {}
-  });
-
   function monter() {
-    document.body.appendChild(video);
     window.BSLogoGlitch = {
       hote: hote,
-      video: video,
       jouer: jouer,
       rembobiner: rembobiner,
       figer: figer,
       ouvrir: ouvrir,
-      /* mise au point : BSLogoGlitch.montre(8) fige le film a la
-         huitieme seconde, BSLogoGlitch.montre() rend la main */
+      /* mise au point : BSLogoGlitch.montre(8) fige le film à la
+         huitième seconde, BSLogoGlitch.montre() rend la main */
       montre(t) {
-        if (t === undefined || t === null) { sens = 0; retirer(); return 0; }
+        if (t === undefined || t === null) { retirer(); return 0; }
         if (!pret) return -1;
         sens = 0;
-        video.pause();
+        if (boucle) { cancelAnimationFrame(boucle); boucle = 0; }
         poser();
-        const fait = () => { video.removeEventListener("seeked", fait); dessiner(true); };
-        video.addEventListener("seeked", fait);
-        video.currentTime = Math.max(0, Math.min(fin(), t));
-        return video.currentTime;
+        temps = Math.max(0, Math.min(fin(), t));
+        dessiner(true);
+        return temps;
       },
       get pret() { return pret; },
-      /* le film est-il en route ? (boot.js compte ses deux secondes
-         a partir de la) */
-      get demande() { return !!video.src; },
+      /* la liste est-elle en route ? (boot.js compte ses deux secondes
+         à partir de là) */
+      get demande() { return demande; },
       get etat() {
+        let octets = 0;
+        if (images) for (const f of images) octets += f.n * 5;
         return {
           pret: pret,
-          definition: [video.videoWidth, video.videoHeight],
-          duree: Math.round((video.duration || 0) * 100) / 100,
-          seconde: Math.round(video.currentTime * 100) / 100,
+          definition: [TAILLE_FILM, TAILLE_FILM],
+          duree: Math.round(duree * 100) / 100,
+          seconde: Math.round(temps * 100) / 100,
           toile: [toile.width, toile.height],
           sens: sens,
-          memoire_Mo: 0
+          memoire_Mo: Math.round(octets / 104857.6) / 10
         };
       }
     };
   }
-  if (document.body) monter();
-  else document.addEventListener("DOMContentLoaded", monter);
+  monter();
   programmer();
 })();

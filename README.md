@@ -923,7 +923,7 @@ rechargement revient à ce qui est écrit ici.
 
 | Page | Ce qu'on voit |
 |---|---|
-| **accueil** | le logo entier — la dernière image de `BSGLITCH.mp4`, **figée** — sur fond noir |
+| **accueil** | le logo entier — la dernière image du logo (`BSGLITCH.squares.bin`), **figée** — sur fond noir |
 | **page d'une fonte** | la vignette `assets/2face.mp4`, en boucle, qui **pivote** lentement, son fond vert détouré |
 
 Dans les deux cas l'écran reste tant que la page n'est pas *vraiment*
@@ -1092,6 +1092,27 @@ BSGlitch.reglages     // voir le tirage en cours
 ```
 
 ### Le logo par-dessus le dérèglement
+
+> **Plus de vidéo.** Le logo n'est plus joué depuis `BSGLITCH.mp4`
+> (2,9 Mo, à décoder) mais lu depuis `assets/logoMedia/BSGLITCH.squares.bin`
+> (**208 Ko**) : pour chaque image du film, la position et la taille
+> de chaque carré, dessinés en canvas 2D, bords arrondis au pixel de
+> l'écran. Même rythme, mêmes sauts d'images, même API
+> (`BSLogoGlitch`). Rien à décoder, donc plus de recul qui se coince
+> sur téléphone. Il faut un navigateur qui sait décompresser du gzip
+> (`DecompressionStream` : Safari 16.4, Chrome 80, Firefox 113).
+>
+> Le fichier se refabrique depuis l'original
+> (`_originaux/assets/logoMedia/BSGLITCH.mp4`, HEVC net) avec
+> `node scripts/build-glitch-squares.js` (ffmpeg requis). À refaire si
+> le film change. Les notes ci-dessous sur l'encodage du film (images
+> clés, H.264, HEVC) racontent l'**ancienne** version : le site ne
+> charge plus `BSGLITCH.mp4`.
+
+> Compatibilité : les navigateurs récents décompressent le fichier seuls ; les anciens (Safari < 16.4, vieux Android) passent par un décompresseur de secours inclus dans `glitch-logo.js`. La liste est préchargée depuis le `<head>` de l'accueil. Si une machine rame (plus de 12 ms par image), la définition de la toile baisse d'un quart, deux fois au plus. `BSGLITCH.mp4` a été retiré de `assets/logoMedia/` : l'original reste dans `_originaux/`.
+
+> Carrés : un seul côté par carré, donc jamais de rectangle ; une seule couleur (`COULEUR`, le vert acide) ; 30 images par seconde.
+> Au réveil, le retour part de l'endroit exact du film s'il n'a pas encore atteint le timecode de départ (`DEPART_RETOUR`, 75 %, arrondi à l'image) ; s'il l'a dépassé, il saute à ce timecode.
 
 Pendant que la page part en bouillie, la vidéo
 `assets/logoMedia/BSGLITCH.mp4` est jouée **au-dessus**, sur sa
