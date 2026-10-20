@@ -52,6 +52,7 @@
      COULEUR       aplat dont les carrés sont remplis
      INTRO         vitesse de l'ouverture du site
      PIXELS_MAX    taille maximum de la toile, en pixels
+     ECHELLE_PORTRAIT  taille du motif sur téléphone (0.8 = 20 % de moins)
 
    COMPATIBILITÉ : le fichier est du gzip. Les navigateurs récents le
    décompressent seuls ; les anciens (Safari < 16.4...) passent par un
@@ -99,6 +100,9 @@
      définition de la toile d'un quart (deux fois au plus). Les
      carrés restent nets : la toile est agrandie sans lissage. */
   const BUDGET_MS = 12;
+  /* Sur téléphone (écran plus haut que large) le motif dépassait
+     sur les bords : il est réduit de 20 %, toujours centré. */
+  const ECHELLE_PORTRAIT = 0.8;
 
   const moi = document.currentScript && document.currentScript.src;
   const BASE = moi ? moi.replace(/assets\/js\/glitch-logo\.js.*$/, "") : "";
@@ -191,7 +195,7 @@
     const debut = performance.now();
     tailler();
     const L = toile.width, H = toile.height;
-    const e = Math.max(L, H) / TAILLE_FILM;
+    const e = Math.max(L, H) / TAILLE_FILM * (H > L ? ECHELLE_PORTRAIT : 1);
     const dx = (L - TAILLE_FILM * e) / 2;
     const dy = (H - TAILLE_FILM * e) / 2;
     const f = images[i];
