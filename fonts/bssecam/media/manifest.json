@@ -2,7 +2,7 @@
   {
     "file": "webSECAM.mp4",
     "kind": "video",
-    "playback": "scrub",
+    "playback": "loop",
     "w": 1280,
     "h": 720
   }
